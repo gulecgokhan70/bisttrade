@@ -169,7 +169,7 @@ export function TradeContent() {
         // Check pending orders in background
         fetch('/api/orders/check', { method: 'POST' }).catch(() => {})
       } catch (err: any) { console.error(err) }
-    }, 1000)
+    }, 15000)
     return () => clearInterval(interval)
   }, [selectedStock?.symbol, period])
 
@@ -205,7 +205,7 @@ export function TradeContent() {
       } catch (err: any) { console.error(err) }
     }
     fetchOrders()
-    const interval = setInterval(fetchOrders, 1000)
+    const interval = setInterval(fetchOrders, 30000)
     return () => clearInterval(interval)
   }, [userId, isGuest, guestId])
 

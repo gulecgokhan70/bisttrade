@@ -106,7 +106,7 @@ export function DashboardContent() {
   // Stock prices: refresh every 1s
   useEffect(() => {
     if (!userId) return
-    const interval = setInterval(fetchStocks, 1000)
+    const interval = setInterval(fetchStocks, 30000)
     return () => clearInterval(interval)
   }, [userId, fetchStocks])
 

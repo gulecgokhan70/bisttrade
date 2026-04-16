@@ -4,6 +4,15 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchMultiSourceQuote, fetchMultiSourceBulkQuotes } from '@/lib/multi-source-finance'
 
+// --- Server-side in-memory cache (30s TTL) ---
+const CACHE_TTL = 30 * 1000 // 30 seconds
+let _bulkCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 }
+let _singleCache: Map<string, { data: any; timestamp: number }> = new Map()
+
+function isCacheValid(timestamp: number) {
+  return Date.now() - timestamp < CACHE_TTL
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -12,6 +21,12 @@ export async function GET(request: Request) {
 
     // --- Single stock lookup ---
     if (symbol) {
+      // Check single stock cache
+      const cached = _singleCache.get(symbol)
+      if (cached && isCacheValid(cached.timestamp)) {
+        return NextResponse.json(cached.data)
+      }
+
       const stock = await prisma.stock.findUnique({ where: { symbol } })
       if (!stock) {
         return NextResponse.json({ error: 'Hisse bulunamadı' }, { status: 404 })
@@ -21,7 +36,6 @@ export async function GET(request: Request) {
       if (stock.yahooSymbol) {
         const quote = await fetchMultiSourceQuote(stock.yahooSymbol, stock.symbol)
         if (quote && quote.currentPrice > 0) {
-          // Return live data immediately, persist in background
           const liveStock = {
             ...stock,
             currentPrice: quote.currentPrice,
@@ -31,6 +45,8 @@ export async function GET(request: Request) {
             volume: quote.volume,
             dataSource: quote.source,
           }
+          // Cache result
+          _singleCache.set(symbol, { data: liveStock, timestamp: Date.now() })
           // Background DB update (don't await)
           prisma.stock.update({
             where: { symbol },
@@ -46,11 +62,17 @@ export async function GET(request: Request) {
         }
       }
 
-      // Return DB price as-is
-      return NextResponse.json({ ...stock, dataSource: 'db' })
+      const result = { ...stock, dataSource: 'db' }
+      _singleCache.set(symbol, { data: result, timestamp: Date.now() })
+      return NextResponse.json(result)
     }
 
     // --- Stock list (all or filtered) ---
+    // Use bulk cache for full list (no search filter)
+    if (!search && _bulkCache.data && isCacheValid(_bulkCache.timestamp)) {
+      return NextResponse.json(_bulkCache.data)
+    }
+
     let where: any = { isActive: true }
     if (search) {
       where = {
@@ -95,6 +117,11 @@ export async function GET(request: Request) {
       }
       return { ...stock, dataSource: 'db' }
     })
+
+    // Cache bulk result (only for full list)
+    if (!search) {
+      _bulkCache = { data: updatedStocks, timestamp: Date.now() }
+    }
 
     // Background: persist live prices to DB (fire-and-forget)
     _persistLivePrices(stocks, multiSourceData).catch(() => {})

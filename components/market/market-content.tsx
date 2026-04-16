@@ -63,7 +63,7 @@ export function MarketContent() {
   }, [fetchStocks])
 
   useEffect(() => {
-    const interval = setInterval(() => fetchStocks(), 1000) // 1s auto-refresh
+    const interval = setInterval(() => fetchStocks(), 30000) // 30s auto-refresh
     return () => clearInterval(interval)
   }, [fetchStocks])
 
