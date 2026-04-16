@@ -19,6 +19,10 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12)
+    // 7 gun ucretsiz deneme suresi
+    const trialEndsAt = new Date()
+    trialEndsAt.setDate(trialEndsAt.getDate() + 7)
+
     const user = await prisma.user.create({
       data: {
         email,
@@ -26,6 +30,8 @@ export async function POST(request: Request) {
         password: hashedPassword,
         cashBalance: 100000,
         role: 'user',
+        subscriptionTier: 'PREMIUM',
+        trialEndsAt,
       },
     })
 

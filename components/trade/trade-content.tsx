@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { FadeIn, SlideIn } from '@/components/ui/animate'
 import { TakasSection } from '@/components/trade/takas-section'
 import { WhaleSection } from '@/components/trade/whale-section'
+import { PremiumGate } from '@/components/premium-gate'
 import { TechnicalPanel } from '@/components/trade/technical-panel'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -556,7 +557,9 @@ export function TradeContent() {
           {/* Balina Takibi */}
           {selectedStock && (
             <FadeIn delay={0.22}>
-              <WhaleSection symbol={selectedStock.symbol} isGuest={isGuest} onSignup={() => router.push('/signup')} />
+              <PremiumGate feature="Balina Radar\u0131">
+                <WhaleSection symbol={selectedStock.symbol} isGuest={isGuest} onSignup={() => router.push('/signup')} />
+              </PremiumGate>
             </FadeIn>
           )}
 

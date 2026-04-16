@@ -63,6 +63,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Stock not found' }, { status: 404 })
     }
 
+    // Check alert limit for free users
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { subscriptionTier: true, trialEndsAt: true } })
+    const now = new Date()
+    const isPremium = user?.subscriptionTier === 'PREMIUM' || (user?.trialEndsAt && user.trialEndsAt > now)
+    if (!isPremium) {
+      const alertCount = await prisma.priceAlert.count({ where: { userId, isActive: true } })
+      if (alertCount >= 3) {
+        return NextResponse.json({ error: "\u00DCcretsiz planda en fazla 3 alarm olu\u015Fturabilirsiniz. Premium'a y\u00FCkseltin!" }, { status: 403 })
+      }
+    }
+
     const alert = await prisma.priceAlert.create({
       data: {
         userId,

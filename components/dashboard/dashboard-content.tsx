@@ -15,6 +15,7 @@ import {
 import { formatCurrency, formatPercent, getChangeColor } from '@/lib/stock-utils'
 import { NewsFeed } from './news-feed'
 import { WhaleRadar } from './whale-radar'
+import { PremiumGate } from '@/components/premium-gate'
 import { BeginnerGuide } from './beginner-guide'
 function isBISTOpen(): boolean {
   const now = new Date()
@@ -620,7 +621,9 @@ export function DashboardContent() {
 
       {/* Balina Radarı */}
       <FadeIn delay={0.35}>
-        <WhaleRadar />
+        <PremiumGate feature="Balina Radar\u0131">
+          <WhaleRadar />
+        </PremiumGate>
       </FadeIn>
 
       {/* Haber Akışı */}

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useSubscription } from '@/hooks/use-subscription'
 import {
   LayoutDashboard,
   TrendingUp,
@@ -19,16 +20,20 @@ import {
   ListOrdered,
   Bot,
   Eye,
+  BarChart3,
+  Crown,
+  Lock,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Piyasa', icon: LayoutDashboard },
   { href: '/dashboard/market', label: 'Liste', icon: TrendingUp },
-  { href: '/dashboard/watchlist', label: 'İzleme Listesi', icon: Eye },
-  { href: '/dashboard/auto-trade', label: 'Oto Al/Sat', icon: Bot },
+  { href: '/dashboard/watchlist', label: '\u0130zleme Listesi', icon: Eye },
+  { href: '/dashboard/analysis', label: 'Analiz', icon: BarChart3, premium: true },
+  { href: '/dashboard/auto-trade', label: 'Oto Al/Sat', icon: Bot, premium: true },
   { href: '/dashboard/orders', label: 'Emirlerim', icon: ListOrdered },
-  { href: '/dashboard/portfolio', label: 'Portföy', icon: Briefcase },
-  { href: '/dashboard/history', label: 'Geçmiş', icon: History },
+  { href: '/dashboard/portfolio', label: 'Portf\u00F6y', icon: Briefcase },
+  { href: '/dashboard/history', label: 'Ge\u00E7mi\u015F', icon: History },
   { href: '/dashboard/alerts', label: 'Alarmlar', icon: Bell },
 ]
 
@@ -37,6 +42,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
   const pathname = usePathname()
   const router = useRouter()
   const [isGuest, setIsGuest] = useState(false)
+  const { isPremium } = useSubscription()
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -87,11 +93,48 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
               )}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>{item?.label}</span>}
+              {!collapsed && (
+                <span className="flex-1 flex items-center gap-2">
+                  {item?.label}
+                  {item?.premium && !isPremium && (
+                    <Lock className="h-3 w-3 text-amber-500" />
+                  )}
+                  {item?.premium && isPremium && (
+                    <Crown className="h-3 w-3 text-amber-500" />
+                  )}
+                </span>
+              )}
             </Link>
           )
         })}
       </nav>
+
+      {/* Premium CTA / Status */}
+      <div className="px-2 pb-2">
+        {isPremium ? (
+          <Link
+            href="/dashboard/pricing"
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 text-amber-500 text-sm font-medium',
+              collapsed && 'justify-center px-0'
+            )}
+          >
+            <Crown className="h-4 w-4 shrink-0" />
+            {!collapsed && 'Premium Aktif'}
+          </Link>
+        ) : (
+          <Link
+            href="/dashboard/pricing"
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-500 text-sm font-medium hover:from-amber-500/20 hover:to-orange-500/20 transition-colors',
+              collapsed && 'justify-center px-0'
+            )}
+          >
+            <Crown className="h-4 w-4 shrink-0" />
+            {!collapsed && "Premium'a Y\u00FCkselt"}
+          </Link>
+        )}
+      </div>
 
       {/* User section */}
       <div className="border-t border-border p-3 space-y-2">
@@ -110,7 +153,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
               onClick={() => signOut({ callbackUrl: '/' })}
             >
               <LogOut className="h-4 w-4" />
-              {!collapsed && 'Çıkış Yap'}
+              {!collapsed && '\u00C7\u0131k\u0131\u015F Yap'}
             </Button>
           </>
         ) : isGuest ? (
@@ -128,7 +171,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
               onClick={() => router.push('/login')}
             >
               <LogIn className="h-4 w-4" />
-              {!collapsed && 'Giriş Yap'}
+              {!collapsed && 'Giri\u015F Yap'}
             </Button>
           </>
         ) : null}
