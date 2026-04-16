@@ -11,4 +11,4 @@ export function formatDuration(seconds: number): string {
   const remainingSeconds = seconds % 60
 
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
-// v2.1 - auto-deploy pipeline active
+}
