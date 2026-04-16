@@ -235,7 +235,7 @@ export function DashboardContent() {
                   )}
                 </div>
                 <div className="text-left">
-                  <p className="text-sm text-foreground/70 mb-1">Piyasa Duyarlılığı</p>
+                  <p className="text-sm text-foreground mb-1">Piyasa Duyarlılığı</p>
                   <p className={`font-display text-xl font-bold ${sentimentColor}`}>{sentimentLabel} Piyasa</p>
                 </div>
               </div>
@@ -245,15 +245,15 @@ export function DashboardContent() {
               <div className="flex items-center justify-center gap-10 sm:gap-14 flex-wrap">
                 <div className="text-center min-w-[60px]">
                   <p className="text-2xl font-bold text-emerald-400 mb-1">{risingCount}</p>
-                  <p className="text-xs text-foreground/70 font-medium">Yükselen</p>
+                  <p className="text-xs text-foreground font-medium">Yükselen</p>
                 </div>
                 <div className="text-center min-w-[60px]">
                   <p className="text-2xl font-bold text-red-400 mb-1">{fallingCount}</p>
-                  <p className="text-xs text-foreground/70 font-medium">Düşen</p>
+                  <p className="text-xs text-foreground font-medium">Düşen</p>
                 </div>
                 <div className="text-center min-w-[60px]">
                   <p className="text-2xl font-bold text-amber-400 mb-1">{unchangedCount}</p>
-                  <p className="text-xs text-foreground/70 font-medium">Değişmez</p>
+                  <p className="text-xs text-foreground font-medium">Değişmez</p>
                 </div>
               </div>
 
@@ -264,7 +264,7 @@ export function DashboardContent() {
                     style={{ width: `${risingPercent}%` }}
                   />
                 </div>
-                <span className="text-sm text-foreground/70 font-mono font-medium">{risingPercent.toFixed(0)}%</span>
+                <span className="text-sm text-foreground font-mono font-medium">{risingPercent.toFixed(0)}%</span>
               </div>
             </div>
           </CardContent>

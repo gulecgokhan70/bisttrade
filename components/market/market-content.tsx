@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -213,51 +214,52 @@ export function MarketContent() {
                         <tr
                           key={stock?.id}
                           className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
-                          onClick={() => router.push(`/dashboard/trade?symbol=${stock?.symbol}`)}
                         >
                           <td className="px-4 py-3">
-                            <div>
+                            <Link href={`/dashboard/trade?symbol=${stock?.symbol}`} className="block">
                               <p className="font-mono font-semibold text-sm">{stock?.symbol}</p>
                               <p className="text-xs text-muted-foreground truncate max-w-[180px]">{stock?.name}</p>
-                            </div>
+                            </Link>
                           </td>
                           <td className="px-4 py-3">
-                            <p className="font-mono text-sm font-medium transition-all duration-300">{formatCurrency(stock?.currentPrice)}</p>
+                            <Link href={`/dashboard/trade?symbol=${stock?.symbol}`} className="block">
+                              <p className="font-mono text-sm font-medium transition-all duration-300">{formatCurrency(stock?.currentPrice)}</p>
+                            </Link>
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono ${getBgChangeColor(change)}`}>
-                              {change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                              {formatPercent(changePercent)}
-                            </span>
+                            <Link href={`/dashboard/trade?symbol=${stock?.symbol}`} className="block">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono ${getBgChangeColor(change)}`}>
+                                {change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                                {formatPercent(changePercent)}
+                              </span>
+                            </Link>
                           </td>
                           <td className="px-4 py-3">
-                            <p className="font-mono text-sm text-muted-foreground">{formatNumber(stock?.volume)}</p>
+                            <Link href={`/dashboard/trade?symbol=${stock?.symbol}`} className="block">
+                              <p className="font-mono text-sm text-muted-foreground">{formatNumber(stock?.volume)}</p>
+                            </Link>
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs"
-                                onClick={(e: React.MouseEvent) => {
-                                  e.stopPropagation()
-                                  router.push(`/dashboard/trade?symbol=${stock?.symbol}`)
-                                }}
-                              >
-                                Trade
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-xs gap-1 text-muted-foreground hover:text-primary"
-                                onClick={(e: React.MouseEvent) => {
-                                  e.stopPropagation()
-                                  router.push(`/dashboard/auto-trade?symbol=${stock?.symbol}`)
-                                }}
-                                title="Oto Al/Sat stratejisi kur"
-                              >
-                                <Bot className="h-3.5 w-3.5" />
-                              </Button>
+                              <Link href={`/dashboard/trade?symbol=${stock?.symbol}`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  Trade
+                                </Button>
+                              </Link>
+                              <Link href={`/dashboard/auto-trade?symbol=${stock?.symbol}`}>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-xs gap-1 text-muted-foreground hover:text-primary"
+                                  title="Oto Al/Sat stratejisi kur"
+                                >
+                                  <Bot className="h-3.5 w-3.5" />
+                                </Button>
+                              </Link>
                             </div>
                           </td>
                         </tr>

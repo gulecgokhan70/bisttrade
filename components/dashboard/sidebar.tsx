@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -73,9 +74,10 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
           const isActive = pathname === item?.href || (item?.href !== '/dashboard' && pathname?.startsWith?.(item?.href))
           const Icon = item?.icon
           return (
-            <button
+            <Link
               key={item?.href}
-              onClick={() => { router.push(item?.href); onNavigate?.() }}
+              href={item?.href}
+              onClick={() => onNavigate?.()}
               className={cn(
                 'flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-fast',
                 isActive
@@ -86,7 +88,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
             >
               <Icon className="h-5 w-5 shrink-0" />
               {!collapsed && <span>{item?.label}</span>}
-            </button>
+            </Link>
           )
         })}
       </nav>
