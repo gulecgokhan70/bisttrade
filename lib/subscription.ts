@@ -1,83 +1,169 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma';
 
-export type SubscriptionTier = 'FREE' | 'PREMIUM'
+export type SubscriptionStatus = {
+  isPremium: boolean;
+  tier: string;
+  expiresAt: Date | null;
+  isTrialActive: boolean;
+  trialEndsAt: Date | null;
+  daysRemaining: number | null;
+};
 
-export const PLANS = {
-  MONTHLY: {
-    name: 'Ayl\u0131k',
-    price: 49.90,
-    interval: 'month' as const,
-    priceDisplay: '\u20BA49,90',
-    badge: '',
-  },
-  YEARLY: {
-    name: 'Y\u0131ll\u0131k',
-    price: 499,
-    interval: 'year' as const,
-    priceDisplay: '\u20BA499',
-    badge: '%17 Tasarruf',
-    monthlyEquivalent: '\u20BA41,58/ay',
-  },
-} as const
-
-export const FREE_FEATURES = [
-  'Piyasa listesi',
-  'Temel al/sat i\u015Flemleri',
-  'Portf\u00F6y takibi',
-  '\u0130zleme listesi',
-  'Emir y\u00F6netimi',
-  '3 fiyat alarm\u0131',
-]
-
-export const PREMIUM_FEATURES = [
-  'T\u00FCm \u00FCcretsiz \u00F6zellikler',
-  'Teknik analiz ara\u00E7lar\u0131',
-  'Otomatik al/sat stratejileri',
-  'Balina radar\u0131',
-  'S\u0131n\u0131rs\u0131z fiyat alarm\u0131',
-  '\u00D6ncelikli destek',
-]
-
-export const PREMIUM_PAGES = [
-  '/dashboard/analysis',
-  '/dashboard/auto-trade',
-]
-
-export const FREE_ALERT_LIMIT = 3
-
-export async function getUserSubscription(userId: string) {
+export async function getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       subscriptionTier: true,
       subscriptionExpiresAt: true,
       trialEndsAt: true,
-      stripeCustomerId: true,
-      stripeSubscriptionId: true,
     },
-  })
-  if (!user) return { tier: 'FREE' as SubscriptionTier, isPremium: false, isTrialing: false }
+  });
 
-  const now = new Date()
+  if (!user) {
+    return {
+      isPremium: false,
+      tier: 'FREE',
+      expiresAt: null,
+      isTrialActive: false,
+      trialEndsAt: null,
+      daysRemaining: null,
+    };
+  }
+
+  const now = new Date();
   
   // Check trial
-  if (user.trialEndsAt && user.trialEndsAt > now) {
-    return { tier: 'PREMIUM' as SubscriptionTier, isPremium: true, isTrialing: true, trialEndsAt: user.trialEndsAt }
+  const isTrialActive = user.trialEndsAt ? user.trialEndsAt > now : false;
+  
+  // Check subscription
+  const isSubscriptionActive = user.subscriptionTier === 'PREMIUM' && 
+    user.subscriptionExpiresAt ? user.subscriptionExpiresAt > now : false;
+  
+  const isPremium = isTrialActive || isSubscriptionActive;
+  
+  // Days remaining
+  let daysRemaining: number | null = null;
+  if (isSubscriptionActive && user.subscriptionExpiresAt) {
+    daysRemaining = Math.ceil((user.subscriptionExpiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  } else if (isTrialActive && user.trialEndsAt) {
+    daysRemaining = Math.ceil((user.trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  // Check active subscription
-  if (user.subscriptionTier === 'PREMIUM' && user.subscriptionExpiresAt && user.subscriptionExpiresAt > now) {
-    return { tier: 'PREMIUM' as SubscriptionTier, isPremium: true, isTrialing: false, expiresAt: user.subscriptionExpiresAt }
-  }
+  return {
+    isPremium,
+    tier: isPremium ? 'PREMIUM' : 'FREE',
+    expiresAt: user.subscriptionExpiresAt,
+    isTrialActive,
+    trialEndsAt: user.trialEndsAt,
+    daysRemaining,
+  };
+}
 
-  // Expired - downgrade
-  if (user.subscriptionTier === 'PREMIUM' && user.subscriptionExpiresAt && user.subscriptionExpiresAt <= now) {
+export async function activateSubscription(
+  userId: string,
+  plan: string,
+  stripeSubscriptionId: string,
+  stripeCustomerId: string,
+  periodEnd: Date
+) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      subscriptionTier: 'PREMIUM',
+      subscriptionExpiresAt: periodEnd,
+      stripeCustomerId,
+      stripeSubscriptionId,
+    },
+  });
+
+  await prisma.subscription.create({
+    data: {
+      userId,
+      plan,
+      status: 'ACTIVE',
+      stripeSubscriptionId,
+      stripeCustomerId,
+      currentPeriodEnd: periodEnd,
+      currentPeriodStart: new Date(),
+    },
+  });
+}
+
+export async function deactivateSubscription(stripeSubscriptionId: string) {
+  const sub = await prisma.subscription.findFirst({
+    where: { stripeSubscriptionId },
+  });
+
+  if (sub) {
+    await prisma.subscription.update({
+      where: { id: sub.id },
+      data: { status: 'CANCELLED' },
+    });
+
     await prisma.user.update({
-      where: { id: userId },
-      data: { subscriptionTier: 'FREE' },
-    })
-    return { tier: 'FREE' as SubscriptionTier, isPremium: false, isTrialing: false }
+      where: { id: sub.userId },
+      data: {
+        subscriptionTier: 'FREE',
+        stripeSubscriptionId: null,
+      },
+    });
   }
+}
 
-  return { tier: (user.subscriptionTier as SubscriptionTier) || 'FREE', isPremium: user.subscriptionTier === 'PREMIUM', isTrialing: false }
+export async function activateCoupon(userId: string, couponCode: string) {
+  const coupon = await prisma.coupon.findUnique({
+    where: { code: couponCode.toUpperCase() },
+  });
+
+  if (!coupon) throw new Error('Geçersiz kupon kodu');
+  if (!coupon.isActive) throw new Error('Bu kupon kodu artık geçerli değil');
+  if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new Error('Kupon kodunun süresi dolmuş');
+  if (coupon.currentUses >= coupon.maxUses) throw new Error('Kupon kodu kullanım limiti dolmuş');
+
+  // Check if user already used this coupon
+  const existingUsage = await prisma.couponUsage.findUnique({
+    where: { userId_couponId: { userId, couponId: coupon.id } },
+  });
+  if (existingUsage) throw new Error('Bu kupon kodunu zaten kullandınız');
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + coupon.durationDays * 24 * 60 * 60 * 1000);
+
+  // Activate subscription
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      subscriptionTier: 'PREMIUM',
+      subscriptionExpiresAt: expiresAt,
+    },
+  });
+
+  // Record coupon usage
+  await prisma.couponUsage.create({
+    data: { userId, couponId: coupon.id },
+  });
+
+  // Increment usage count
+  await prisma.coupon.update({
+    where: { id: coupon.id },
+    data: { currentUses: { increment: 1 } },
+  });
+
+  // Create subscription record
+  await prisma.subscription.create({
+    data: {
+      userId,
+      plan: 'COUPON',
+      status: 'ACTIVE',
+      couponCode: coupon.code,
+      currentPeriodStart: now,
+      currentPeriodEnd: expiresAt,
+    },
+  });
+
+  return {
+    durationDays: coupon.durationDays,
+    discountPercent: coupon.discountPercent,
+    expiresAt,
+  };
 }

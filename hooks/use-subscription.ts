@@ -1,47 +1,52 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 
-interface SubscriptionData {
-  tier: 'FREE' | 'PREMIUM'
-  isPremium: boolean
-  isTrialing: boolean
-  trialEndsAt?: string
-  expiresAt?: string
-  loading: boolean
+export interface SubscriptionInfo {
+  isPremium: boolean;
+  tier: string;
+  expiresAt: string | null;
+  isTrialActive: boolean;
+  trialEndsAt: string | null;
+  daysRemaining: number | null;
+  loading: boolean;
 }
 
-export function useSubscription(): SubscriptionData {
-  const { data: session, status } = useSession() || {}
-  const [data, setData] = useState<SubscriptionData>({
-    tier: 'FREE',
+export function useSubscription() {
+  const { data: session, status } = useSession() || {};
+  const [info, setInfo] = useState<SubscriptionInfo>({
     isPremium: false,
-    isTrialing: false,
+    tier: 'FREE',
+    expiresAt: null,
+    isTrialActive: false,
+    trialEndsAt: null,
+    daysRemaining: null,
     loading: true,
-  })
+  });
 
   const fetchSubscription = useCallback(async () => {
-    if (status !== 'authenticated' || !session?.user) {
-      setData(prev => ({ ...prev, loading: false }))
-      return
+    if (status !== 'authenticated' || !session?.user?.id) {
+      setInfo(prev => ({ ...prev, loading: false }));
+      return;
     }
+
     try {
-      const res = await fetch('/api/subscription/status')
+      const res = await fetch('/api/subscription/status');
       if (res.ok) {
-        const json = await res.json()
-        setData({ ...json, loading: false })
+        const data = await res.json();
+        setInfo({ ...data, loading: false });
       } else {
-        setData(prev => ({ ...prev, loading: false }))
+        setInfo(prev => ({ ...prev, loading: false }));
       }
     } catch {
-      setData(prev => ({ ...prev, loading: false }))
+      setInfo(prev => ({ ...prev, loading: false }));
     }
-  }, [status, session])
+  }, [status, session?.user?.id]);
 
   useEffect(() => {
-    fetchSubscription()
-  }, [fetchSubscription])
+    fetchSubscription();
+  }, [fetchSubscription]);
 
-  return data
+  return { ...info, refetch: fetchSubscription };
 }

@@ -25,27 +25,27 @@ import { toast } from 'sonner'
 
 const FREE_FEATURES = [
   'Piyasa listesi',
-  'Temel al/sat i\u015Flemleri',
-  'Portf\u00F6y takibi',
-  '\u0130zleme listesi',
-  'Emir y\u00F6netimi',
-  '3 fiyat alarm\u0131',
+  'Temel al/sat işlemleri',
+  'Portföy takibi',
+  'İzleme listesi',
+  'Emir yönetimi',
+  '3 fiyat alarmı',
 ]
 
 const PREMIUM_FEATURES = [
-  'T\u00FCm \u00FCcretsiz \u00F6zellikler',
-  'Teknik analiz ara\u00E7lar\u0131',
+  'Tüm ücretsiz özellikler',
+  'Teknik analiz araçları',
   'Otomatik al/sat stratejileri',
-  'Balina radar\u0131',
-  'S\u0131n\u0131rs\u0131z fiyat alarm\u0131',
-  '\u00D6ncelikli destek',
+  'Balina radarı',
+  'Sınırsız fiyat alarmı',
+  'Öncelikli destek',
 ]
 
 export function PricingContent() {
   const { data: session } = useSession() || {}
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isPremium, isTrialing, tier, loading: subLoading, trialEndsAt, expiresAt } = useSubscription()
+  const { isPremium, isTrialActive, tier, loading: subLoading, trialEndsAt, expiresAt } = useSubscription()
   const [selectedPlan, setSelectedPlan] = useState<'MONTHLY' | 'YEARLY'>('YEARLY')
   const [couponCode, setCouponCode] = useState('')
   const [couponLoading, setCouponLoading] = useState(false)
@@ -55,10 +55,10 @@ export function PricingContent() {
 
   useEffect(() => {
     if (searchParams?.get('success') === 'true') {
-      toast.success('Abonelik ba\u015Far\u0131yla aktif edildi! \u{1F389}')
+      toast.success('Abonelik başarıyla aktif edildi! \u{1F389}')
     }
     if (searchParams?.get('cancelled') === 'true') {
-      toast.info('\u00D6deme iptal edildi')
+      toast.info('Ödeme iptal edildi')
     }
   }, [searchParams])
 
@@ -78,10 +78,10 @@ export function PricingContent() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        toast.error(data.error || '\u00D6deme ba\u015Flat\u0131lamad\u0131')
+        toast.error(data.error || 'Ödeme başlatılamadı')
       }
     } catch {
-      toast.error('Bir hata olu\u015Ftu')
+      toast.error('Bir hata oluştu')
     } finally {
       setCheckoutLoading(false)
     }
@@ -95,10 +95,10 @@ export function PricingContent() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        toast.error(data.error || 'Portal a\u00E7\u0131lamad\u0131')
+        toast.error(data.error || 'Portal açılamadı')
       }
     } catch {
-      toast.error('Bir hata olu\u015Ftu')
+      toast.error('Bir hata oluştu')
     } finally {
       setPortalLoading(false)
     }
@@ -121,7 +121,7 @@ export function PricingContent() {
         setCouponResult({ valid: false, error: data.error })
       }
     } catch {
-      setCouponResult({ valid: false, error: 'Bir hata olu\u015Ftu' })
+      setCouponResult({ valid: false, error: 'Bir hata oluştu' })
     } finally {
       setCouponLoading(false)
     }
@@ -144,10 +144,10 @@ export function PricingContent() {
         // Refresh page to update subscription status
         setTimeout(() => window.location.reload(), 1500)
       } else {
-        toast.error(data.error || 'Kupon kullan\u0131lamad\u0131')
+        toast.error(data.error || 'Kupon kullanılamadı')
       }
     } catch {
-      toast.error('Bir hata olu\u015Ftu')
+      toast.error('Bir hata oluştu')
     } finally {
       setCouponLoading(false)
     }
@@ -166,10 +166,10 @@ export function PricingContent() {
           <Crown className="h-4 w-4" />
           Premium
         </div>
-        <h1 className="text-3xl font-bold">Plan\u0131n\u0131z\u0131 Se\u00E7in</h1>
+        <h1 className="text-3xl font-bold">Planınızı Seçin</h1>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          BIST Trade Premium ile teknik analiz, otomatik al/sat ve daha fazlas\u0131na eri\u015Fin.
-          7 g\u00FCn \u00FCcretsiz deneyin!
+          BIST Trade Premium ile teknik analiz, otomatik al/sat ve daha fazlasına erişin.
+          7 gün ücretsiz deneyin!
         </p>
       </div>
 
@@ -183,20 +183,20 @@ export function PricingContent() {
               </div>
               <div>
                 <p className="font-semibold text-amber-500">
-                  {isTrialing ? 'Deneme S\u00FCresi Aktif' : 'Premium Aktif'}
+                  {isTrialActive ? 'Deneme Süresi Aktif' : 'Premium Aktif'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {isTrialing && trialEndsAt
+                  {isTrialActive && trialEndsAt
                     ? `Deneme ${formatDate(trialEndsAt)} tarihine kadar`
                     : expiresAt
-                    ? `${formatDate(expiresAt)} tarihine kadar ge\u00E7erli`
+                    ? `${formatDate(expiresAt)} tarihine kadar geçerli`
                     : 'Aktif abonelik'}
                 </p>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={handlePortal} disabled={portalLoading}>
               {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4 mr-2" />}
-              Aboneli\u011Fi Y\u00F6net
+              Aboneliği Yönet
             </Button>
           </CardContent>
         </Card>
@@ -212,7 +212,7 @@ export function PricingContent() {
               }`}
               onClick={() => setSelectedPlan('MONTHLY')}
             >
-              Ayl\u0131k
+              Aylık
             </button>
             <button
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
@@ -220,7 +220,7 @@ export function PricingContent() {
               }`}
               onClick={() => setSelectedPlan('YEARLY')}
             >
-              Y\u0131ll\u0131k
+              Yıllık
               <Badge className="bg-emerald-500/10 text-emerald-500 border-0 text-xs">%17 Tasarruf</Badge>
             </button>
           </div>
@@ -238,12 +238,12 @@ export function PricingContent() {
           )}
           <CardHeader className="pb-4">
             <div className="space-y-2">
-              <h3 className="text-xl font-bold">\u00DCcretsiz</h3>
+              <h3 className="text-xl font-bold">Ücretsiz</h3>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold">\u20BA0</span>
+                <span className="text-3xl font-bold">₺0</span>
                 <span className="text-muted-foreground">/ay</span>
               </div>
-              <p className="text-sm text-muted-foreground">Temel \u00F6zelliklerle ba\u015Flay\u0131n</p>
+              <p className="text-sm text-muted-foreground">Temel özelliklerle başlayın</p>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -267,7 +267,7 @@ export function PricingContent() {
           )}
           <div className="absolute -top-3 right-4">
             <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs">
-              <Star className="h-3 w-3 mr-1" /> \u00D6nerilen
+              <Star className="h-3 w-3 mr-1" /> Önerilen
             </Badge>
           </div>
           <CardHeader className="pb-4">
@@ -278,16 +278,16 @@ export function PricingContent() {
               </h3>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-bold">
-                  {selectedPlan === 'MONTHLY' ? '\u20BA49,90' : '\u20BA499'}
+                  {selectedPlan === 'MONTHLY' ? '₺49,90' : '₺499'}
                 </span>
                 <span className="text-muted-foreground">
-                  /{selectedPlan === 'MONTHLY' ? 'ay' : 'y\u0131l'}
+                  /{selectedPlan === 'MONTHLY' ? 'ay' : 'yıl'}
                 </span>
               </div>
               {selectedPlan === 'YEARLY' && (
-                <p className="text-sm text-emerald-500 font-medium">\u20BA41,58/ay - Ayl\u0131k \u00F6demeye g\u00F6re %17 tasarruf!</p>
+                <p className="text-sm text-emerald-500 font-medium">₺41,58/ay - Aylık ödemeye göre %17 tasarruf!</p>
               )}
-              <p className="text-sm text-muted-foreground">7 g\u00FCn \u00FCcretsiz deneme ile ba\u015Flay\u0131n</p>
+              <p className="text-sm text-muted-foreground">7 gün ücretsiz deneme ile başlayın</p>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -311,7 +311,7 @@ export function PricingContent() {
                 ) : (
                   <Sparkles className="h-4 w-4 mr-2" />
                 )}
-                7 G\u00FCn \u00DCcretsiz Dene
+                7 Gün Ücretsiz Dene
               </Button>
             )}
           </CardContent>
@@ -364,7 +364,7 @@ export function PricingContent() {
       {/* Security note */}
       <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
         <Shield className="h-4 w-4" />
-        <span>G\u00FCvenli \u00F6deme Stripe altyap\u0131s\u0131 ile sa\u011Flanmaktad\u0131r</span>
+        <span>Güvenli ödeme Stripe altyapısı ile sağlanmaktadır</span>
       </div>
     </div>
   )

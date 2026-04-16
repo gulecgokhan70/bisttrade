@@ -28,12 +28,12 @@ import {
 const navItems = [
   { href: '/dashboard', label: 'Piyasa', icon: LayoutDashboard },
   { href: '/dashboard/market', label: 'Liste', icon: TrendingUp },
-  { href: '/dashboard/watchlist', label: '\u0130zleme Listesi', icon: Eye },
+  { href: '/dashboard/watchlist', label: 'İzleme Listesi', icon: Eye },
   { href: '/dashboard/analysis', label: 'Analiz', icon: BarChart3, premium: true },
   { href: '/dashboard/auto-trade', label: 'Oto Al/Sat', icon: Bot, premium: true },
   { href: '/dashboard/orders', label: 'Emirlerim', icon: ListOrdered },
-  { href: '/dashboard/portfolio', label: 'Portf\u00F6y', icon: Briefcase },
-  { href: '/dashboard/history', label: 'Ge\u00E7mi\u015F', icon: History },
+  { href: '/dashboard/portfolio', label: 'Portföy', icon: Briefcase },
+  { href: '/dashboard/history', label: 'Geçmiş', icon: History },
   { href: '/dashboard/alerts', label: 'Alarmlar', icon: Bell },
 ]
 
@@ -131,7 +131,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
             )}
           >
             <Crown className="h-4 w-4 shrink-0" />
-            {!collapsed && "Premium'a Y\u00FCkselt"}
+            {!collapsed && "Premium'a Yükselt"}
           </Link>
         )}
       </div>
@@ -153,7 +153,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
               onClick={() => signOut({ callbackUrl: '/' })}
             >
               <LogOut className="h-4 w-4" />
-              {!collapsed && '\u00C7\u0131k\u0131\u015F Yap'}
+              {!collapsed && 'Çıkış Yap'}
             </Button>
           </>
         ) : isGuest ? (
@@ -171,7 +171,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: { collapsed: boolea
               onClick={() => router.push('/login')}
             >
               <LogIn className="h-4 w-4" />
-              {!collapsed && 'Giri\u015F Yap'}
+              {!collapsed && 'Giriş Yap'}
             </Button>
           </>
         ) : null}

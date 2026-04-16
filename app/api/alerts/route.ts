@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     if (!isPremium) {
       const alertCount = await prisma.priceAlert.count({ where: { userId, isActive: true } })
       if (alertCount >= 3) {
-        return NextResponse.json({ error: "\u00DCcretsiz planda en fazla 3 alarm olu\u015Fturabilirsiniz. Premium'a y\u00FCkseltin!" }, { status: 403 })
+        return NextResponse.json({ error: "Ücretsiz planda en fazla 3 alarm oluşturabilirsiniz. Premium'a yükseltin!" }, { status: 403 })
       }
     }
 

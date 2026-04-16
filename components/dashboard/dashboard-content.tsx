@@ -377,7 +377,8 @@ export function DashboardContent() {
         </div>
       </FadeIn>
 
-      {/* Trade Scanner - Fırsat Tarayıcı */}
+      {/* Trade Scanner - Fırsat Tarayıcı (Premium Only) */}
+      <PremiumGate feature="Fırsat Tarayıcı">
       {isGuest ? (
         <FadeIn delay={0.3}>
           <Card>
@@ -618,10 +619,11 @@ export function DashboardContent() {
         </Card>
       </FadeIn>
       )}
+      </PremiumGate>
 
       {/* Balina Radarı */}
       <FadeIn delay={0.35}>
-        <PremiumGate feature="Balina Radar\u0131">
+        <PremiumGate feature="Balina Radarı">
           <WhaleRadar />
         </PremiumGate>
       </FadeIn>

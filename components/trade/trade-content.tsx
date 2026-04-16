@@ -557,7 +557,7 @@ export function TradeContent() {
           {/* Balina Takibi */}
           {selectedStock && (
             <FadeIn delay={0.22}>
-              <PremiumGate feature="Balina Radar\u0131">
+              <PremiumGate feature="Balina Radarı">
                 <WhaleSection symbol={selectedStock.symbol} isGuest={isGuest} onSignup={() => router.push('/signup')} />
               </PremiumGate>
             </FadeIn>

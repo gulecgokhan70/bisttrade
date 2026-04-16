@@ -826,6 +826,38 @@ async function main() {
   }
 
   console.log(`Seeding completed! ${stocks.length} stocks added. ${delistedSymbols.length} deactivated.`)
+
+  // ---- 10 Kupon Kodu Seed ----
+  // 5 adet 30 günlük, 5 adet süresiz
+  const couponsToSeed = [
+    { code: 'DOSTUM-A1', durationDays: 30 },
+    { code: 'DOSTUM-B2', durationDays: 30 },
+    { code: 'DOSTUM-C3', durationDays: 30 },
+    { code: 'DOSTUM-D4', durationDays: 30 },
+    { code: 'DOSTUM-E5', durationDays: 30 },
+    { code: 'VIP-GOLD-7X', durationDays: 99999 },
+    { code: 'VIP-PLAT-8Y', durationDays: 99999 },
+    { code: 'VIP-ELMAS-9Z', durationDays: 99999 },
+    { code: 'VIP-STAR-3K', durationDays: 99999 },
+    { code: 'VIP-ROYAL-6M', durationDays: 99999 },
+  ]
+
+  for (const c of couponsToSeed) {
+    await prisma.coupon.upsert({
+      where: { code: c.code },
+      update: {},
+      create: {
+        code: c.code,
+        discountPercent: 100,
+        durationDays: c.durationDays,
+        maxUses: 1,
+        currentUses: 0,
+        isActive: true,
+        expiresAt: null,
+      },
+    })
+  }
+  console.log(`10 kupon kodu eklendi!`)
 }
 
 main()

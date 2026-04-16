@@ -24,36 +24,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 
-// Animated counter hook
-function useCountUp(end: number, duration: number = 2000, startOnView: boolean = true) {
-  const [count, setCount] = useState(0)
-  const [started, setStarted] = useState(!startOnView)
-  const ref = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!startOnView) return
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry?.isIntersecting) setStarted(true) },
-      { threshold: 0.3 }
-    )
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [startOnView])
-
-  useEffect(() => {
-    if (!started) return
-    let start = 0
-    const step = end / (duration / 16)
-    const timer = setInterval(() => {
-      start += step
-      if (start >= end) { setCount(end); clearInterval(timer) }
-      else setCount(Math.floor(start))
-    }, 16)
-    return () => clearInterval(timer)
-  }, [started, end, duration])
-
-  return { count, ref }
-}
 
 export function LandingPageClient() {
   const { data: session, status } = useSession() || {}
@@ -83,10 +54,7 @@ export function LandingPageClient() {
     }
   }
 
-  // Counters
-  const usersCounter = useCountUp(2500, 2000)
-  const tradesCounter = useCountUp(150000, 2500)
-  const stocksCounter = useCountUp(100, 1500)
+
 
   if (!mounted) return null
 
@@ -192,31 +160,7 @@ export function LandingPageClient() {
         </div>
       </section>
 
-      {/* Stats Counter Section */}
-      <section className="py-12 border-b">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="grid grid-cols-3 gap-4 sm:gap-8">
-            <div ref={usersCounter.ref} className="text-center">
-              <p className="font-display text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                {usersCounter.count.toLocaleString('tr-TR')}+
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">Kullanıcı</p>
-            </div>
-            <div ref={tradesCounter.ref} className="text-center">
-              <p className="font-display text-3xl sm:text-4xl font-bold bg-gradient-to-r from-violet-500 to-purple-500 bg-clip-text text-transparent">
-                {tradesCounter.count.toLocaleString('tr-TR')}+
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">İşlem</p>
-            </div>
-            <div ref={stocksCounter.ref} className="text-center">
-              <p className="font-display text-3xl sm:text-4xl font-bold bg-gradient-to-r from-emerald-500 to-green-500 bg-clip-text text-transparent">
-                {stocksCounter.count}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">BIST Hisse</p>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* How It Works */}
       <section className="py-20">
@@ -340,7 +284,8 @@ export function LandingPageClient() {
               <Zap className="h-4 w-4" /> Hemen Başlayın
             </div>
             <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-              Trade Kariyerinize\n              <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent"> Bugün Başlayın</span>
+              Trade Kariyerinize{' '}
+              <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{"Bugün Başlayın"}</span>
             </h2>
             <p className="text-muted-foreground mb-8 text-lg">
               Kayıt olmadan demo hesap ile deneyebilir veya ücretsiz hesap oluşturabilirsiniz.

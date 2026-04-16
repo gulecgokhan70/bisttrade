@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!(session?.user as any)?.id) {
-      return NextResponse.json({ error: 'Giri\u015F yapman\u0131z gerekiyor' }, { status: 401 })
+      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
 
     const { code } = await request.json()
@@ -19,20 +19,20 @@ export async function POST(request: NextRequest) {
 
     const coupon = await prisma.coupon.findUnique({ where: { code: code.toUpperCase() } })
     if (!coupon || !coupon.isActive) {
-      return NextResponse.json({ error: 'Ge\u00E7ersiz kupon kodu' }, { status: 400 })
+      return NextResponse.json({ error: 'Geçersiz kupon kodu' }, { status: 400 })
     }
     if (coupon.expiresAt && coupon.expiresAt < new Date()) {
-      return NextResponse.json({ error: 'Kupon s\u00FCresi dolmu\u015F' }, { status: 400 })
+      return NextResponse.json({ error: 'Kupon süresi dolmuş' }, { status: 400 })
     }
     if (coupon.currentUses >= coupon.maxUses) {
-      return NextResponse.json({ error: 'Kupon kullan\u0131m limiti dolmu\u015F' }, { status: 400 })
+      return NextResponse.json({ error: 'Kupon kullanım limiti dolmuş' }, { status: 400 })
     }
 
     const existingUsage = await prisma.couponUsage.findUnique({
       where: { userId_couponId: { userId: (session?.user as any)?.id, couponId: coupon.id } },
     })
     if (existingUsage) {
-      return NextResponse.json({ error: 'Bu kuponu zaten kulland\u0131n\u0131z' }, { status: 400 })
+      return NextResponse.json({ error: 'Bu kuponu zaten kullandınız' }, { status: 400 })
     }
 
     // For 100% discount coupons, activate premium directly
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Premium ${coupon.durationDays} g\u00FCn aktif edildi!`,
+        message: `Premium ${coupon.durationDays} gün aktif edildi!`,
         expiresAt: expiresAt.toISOString(),
       })
     }
@@ -88,11 +88,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       discountPercent: coupon.discountPercent,
-      message: `%${coupon.discountPercent} indirim uyguland\u0131`,
+      message: `%${coupon.discountPercent} indirim uygulandı`,
       requiresPayment: true,
     })
   } catch (error) {
     console.error('Coupon redeem error:', error)
-    return NextResponse.json({ error: 'Bir hata olu\u015Ftu' }, { status: 500 })
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 })
   }
 }

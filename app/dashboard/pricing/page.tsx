@@ -1,5 +1,5 @@
-import { PricingContent } from '@/components/pricing/pricing-content'
+import PricingContent from '@/components/subscription/pricing-content';
 
 export default function PricingPage() {
-  return <PricingContent />
+  return <PricingContent />;
 }
