@@ -62,7 +62,7 @@ function computeEnhancedSignal(
     // No MTF data - use base signal with mode adjustment
     if (isAggressive) {
       // Aggressive: lower confidence threshold, boost confidence
-      return { ...baseSignal, confidence: Math.min(baseSignal.confidence + 15, 95) }
+      return { ...baseSignal, confidence: Math.min(baseSignal.confidence + 20, 95) }
     }
     return baseSignal
   }
@@ -87,10 +87,10 @@ function computeEnhancedSignal(
     }
   } else if (mtf.alignment === 'ZİT') {
     if (!isAggressive) {
-      finalConf -= 15
+      finalConf -= 8
       reasons.push('Zaman dilimleri çelişkili - dikkat')
     } else {
-      finalConf -= 5 // Less penalty in aggressive mode
+      finalConf -= 2 // Minimal penalty in aggressive mode
       reasons.push('Zaman dilimleri çelişkili')
     }
   } else {
@@ -105,7 +105,7 @@ function computeEnhancedSignal(
         reasons.push('Haftalık+Aylık SAT uyumu')
       } else if (!isAggressive) {
         // Base signal disagrees with weekly+monthly
-        finalConf -= 10
+        finalConf -= 5
         reasons.push('Uzun vade karşı yön')
       }
     }
@@ -113,21 +113,33 @@ function computeEnhancedSignal(
 
   // Aggressive mode adjustments
   if (isAggressive) {
-    finalConf += 10 // General boost
+    finalConf += 15 // Güçlü boost
     // In aggressive mode, daily signal has more weight
     if (mtf.daily.signal === 'AL' && finalSignal !== 'SELL') {
-      finalConf += 5
+      finalConf += 8
     } else if (mtf.daily.signal === 'SAT' && finalSignal !== 'BUY') {
-      finalConf += 5
+      finalConf += 8
     }
-    // Aggressive: if consensus is strong, override HOLD
-    if (finalSignal === 'HOLD' && Math.abs(mtf.consensusScore) > 40) {
-      if (mtf.consensusScore > 40) {
+    // Aggressive: if consensus has any direction, override HOLD
+    if (finalSignal === 'HOLD' && Math.abs(mtf.consensusScore) > 20) {
+      if (mtf.consensusScore > 20) {
         finalSignal = 'BUY'
-        reasons.push('Agresif: güçlü AL konsensüsü')
-      } else if (mtf.consensusScore < -40) {
+        reasons.push('Agresif: AL konsensüsü')
+      } else if (mtf.consensusScore < -20) {
         finalSignal = 'SELL'
-        reasons.push('Agresif: güçlü SAT konsensüsü')
+        reasons.push('Agresif: SAT konsensüsü')
+      }
+    }
+  } else {
+    // Normal modda da hafif boost
+    finalConf += 5
+    if (finalSignal === 'HOLD' && Math.abs(mtf.consensusScore) > 50) {
+      if (mtf.consensusScore > 50) {
+        finalSignal = 'BUY'
+        reasons.push('Güçlü AL konsensüsü')
+      } else if (mtf.consensusScore < -50) {
+        finalSignal = 'SELL'
+        reasons.push('Güçlü SAT konsensüsü')
       }
     }
   }
@@ -173,7 +185,7 @@ export async function POST(request: Request) {
       try {
         const mode = (strat as any).mode ?? 'normal'
         const isAggressive = mode === 'aggressive'
-        const minConfidence = isAggressive ? 30 : 60
+        const minConfidence = isAggressive ? 20 : 35
 
         // Fetch recent history for analysis
         let history: any[] = []
@@ -253,7 +265,7 @@ export async function POST(request: Request) {
             })
             continue
           }
-          const sellRatio = isAggressive ? 1.0 : 0.5 // Aggressive sells all, normal sells half
+          const sellRatio = isAggressive ? 1.0 : 0.75 // Aggressive sells all, normal sells 75%
           qty = Math.min(Math.floor(holding.quantity * sellRatio), strat.maxQuantity)
           if (isAggressive) qty = Math.min(Math.floor(holding.quantity), Math.floor(strat.maxQuantity * 1.5))
           if (qty <= 0) {

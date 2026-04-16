@@ -9,13 +9,13 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ isPremium: false, tier: 'FREE', loading: false });
+      return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 });
     }
 
     const status = await getSubscriptionStatus(session.user.id);
     return NextResponse.json(status);
   } catch (error) {
     console.error('Subscription status error:', error);
-    return NextResponse.json({ isPremium: false, tier: 'FREE' }, { status: 500 });
+    return NextResponse.json({ error: 'Bir hata oluştu' }, { status: 500 });
   }
 }

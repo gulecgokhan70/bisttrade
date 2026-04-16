@@ -240,20 +240,30 @@ export function generateSignal(
       const trendDown = lastPrice < curr20
 
       if (crossed_up && trendUp) {
-        const conf = volConfirm ? 82 : 68
+        const conf = volConfirm ? 85 : 72
         return { signal: 'BUY', reason: `SMA(5) SMA(10) yukarı kesti, trend yukarı${volConfirm ? ' + hacim teyidi' : ''}`, confidence: conf }
       }
       if (crossed_down && trendDown) {
-        const conf = volConfirm ? 80 : 66
+        const conf = volConfirm ? 83 : 70
         return { signal: 'SELL', reason: `SMA(5) SMA(10) aşağı kesti, trend aşağı${volConfirm ? ' + hacim teyidi' : ''}`, confidence: conf }
       }
-      if (crossed_up) return { signal: 'BUY', reason: 'SMA(5) SMA(10) yukarı kesti (trend karşı)', confidence: 52 }
-      if (crossed_down) return { signal: 'SELL', reason: 'SMA(5) SMA(10) aşağı kesti (trend karşı)', confidence: 52 }
+      if (crossed_up) return { signal: 'BUY', reason: 'SMA(5) SMA(10) yukarı kesti (trend karşı)', confidence: 58 }
+      if (crossed_down) return { signal: 'SELL', reason: 'SMA(5) SMA(10) aşağı kesti (trend karşı)', confidence: 58 }
 
-      // Proximity alert
+      // Proximity alert — yakınsama durumunda da sinyal üret
       const gap = Math.abs(curr5 - curr10) / curr10 * 100
-      if (gap < 0.3 && trendUp) return { signal: 'HOLD', reason: `SMA yakınsama (boğa beklentisi), mesafe %${gap.toFixed(2)}`, confidence: 45 }
-      if (gap < 0.3 && trendDown) return { signal: 'HOLD', reason: `SMA yakınsama (ayı beklentisi), mesafe %${gap.toFixed(2)}`, confidence: 45 }
+      if (gap < 0.8 && trendUp && curr5 > curr10) {
+        return { signal: 'BUY', reason: `SMA yakınsama boğa sinyali, mesafe %${gap.toFixed(2)}`, confidence: volConfirm ? 58 : 48 }
+      }
+      if (gap < 0.8 && trendDown && curr5 < curr10) {
+        return { signal: 'SELL', reason: `SMA yakınsama ayı sinyali, mesafe %${gap.toFixed(2)}`, confidence: volConfirm ? 56 : 46 }
+      }
+      if (gap < 0.8 && trendUp) return { signal: 'BUY', reason: `SMA yakınsama (boğa beklentisi), mesafe %${gap.toFixed(2)}`, confidence: 42 }
+      if (gap < 0.8 && trendDown) return { signal: 'SELL', reason: `SMA yakınsama (ayı beklentisi), mesafe %${gap.toFixed(2)}`, confidence: 42 }
+
+      // SMA(5) pozisyonuna göre yön sinyali
+      if (curr5 > curr10 && trendUp) return { signal: 'BUY', reason: `SMA(5)>SMA(10), trend↑`, confidence: 40 }
+      if (curr5 < curr10 && trendDown) return { signal: 'SELL', reason: `SMA(5)<SMA(10), trend↓`, confidence: 40 }
 
       return { signal: 'HOLD', reason: `SMA(5): ₺${curr5.toFixed(2)}, SMA(10): ₺${curr10.toFixed(2)}, Trend: ${trendUp ? '↑' : '↓'}`, confidence: 25 }
     }
@@ -274,24 +284,25 @@ export function generateSignal(
       const priceRising = lastPrice > price5ago
       const rsiFalling = currRsi < rsi5ago
 
-      if (currRsi < 35) {
-        const reasons: string[] = [`RSI(9): ${currRsi.toFixed(1)} (Aşırı Satım)`]
-        let conf = 65
+      if (currRsi < 45) {
+        const isDeep = currRsi < 30
+        const reasons: string[] = [`RSI(9): ${currRsi.toFixed(1)} (${isDeep ? 'Aşırı Satım' : 'Düşük Bölge'})`]
+        let conf = isDeep ? 72 : 55
         if (prevRsi && currRsi > prevRsi) { reasons.push('RSI dönüş sinyali ↑'); conf += 10 }
-        if (currStoch && currStoch < 20) { reasons.push(`StochRSI: ${currStoch.toFixed(0)}`); conf += 5 }
+        if (currStoch && currStoch < 30) { reasons.push(`StochRSI: ${currStoch.toFixed(0)}`); conf += 5 }
         if (priceFalling && rsiRising) { reasons.push('Boğa uyumsuzluğu'); conf += 10 }
         if (volConfirm) { reasons.push('hacim teyidi'); conf += 5 }
-        return { signal: 'BUY', reason: reasons.join(' · '), confidence: Math.min(conf, 90) }
+        return { signal: 'BUY', reason: reasons.join(' · '), confidence: Math.min(conf, 92) }
       }
-      if (currRsi > 65) {
-        const reasons: string[] = [`RSI(9): ${currRsi.toFixed(1)} (Aşırı Alım)`]
-        let conf = 65
+      if (currRsi > 55) {
+        const isDeep = currRsi > 70
+        const reasons: string[] = [`RSI(9): ${currRsi.toFixed(1)} (${isDeep ? 'Aşırı Alım' : 'Yüksek Bölge'})`]
+        let conf = isDeep ? 72 : 55
         if (prevRsi && currRsi < prevRsi) { reasons.push('RSI dönüş sinyali ↓'); conf += 10 }
-        if (currStoch && currStoch > 80) { reasons.push(`StochRSI: ${currStoch.toFixed(0)}`); conf += 5 }
+        if (currStoch && currStoch > 70) { reasons.push(`StochRSI: ${currStoch.toFixed(0)}`); conf += 5 }
         if (priceRising && rsiFalling) { reasons.push('Ayı uyumsuzluğu'); conf += 10 }
-        // Hacim doğrulaması: düşük hacimle yüksek RSI sahte olabilir
-        if (!volConfirm) { reasons.push('⚠️ Hacim teyidi yok'); conf -= 15 }
-        return { signal: 'SELL', reason: reasons.join(' · '), confidence: Math.min(conf, 90) }
+        if (!volConfirm && isDeep) { reasons.push('⚠️ Hacim teyidi yok'); conf -= 10 }
+        return { signal: 'SELL', reason: reasons.join(' · '), confidence: Math.min(conf, 92) }
       }
       return { signal: 'HOLD', reason: `RSI(9): ${currRsi.toFixed(1)} · StochRSI: ${currStoch?.toFixed(0) ?? 'N/A'} (Nötr)`, confidence: 30 }
     }
@@ -317,32 +328,36 @@ export function generateSignal(
       const bullDiv = lastPrice < price10ago && currRsi > rsi10ago // price falling but RSI rising
       const bearDiv = lastPrice > price10ago && currRsi < rsi10ago // price rising but RSI falling
 
-      if (currRsi < 30) {
-        const reasons: string[] = [`RSI(14): ${currRsi.toFixed(1)} (Aşırı Satım)`]
-        let conf = 68
+      if (currRsi < 40) {
+        const isDeep = currRsi < 25
+        const reasons: string[] = [`RSI(14): ${currRsi.toFixed(1)} (${isDeep ? 'Aşırı Satım' : 'Düşük Bölge'})`]
+        let conf = isDeep ? 75 : 55
         if (trendUp) { reasons.push('trend yukarı ↑'); conf += 8 }
         if (prevRsi && currRsi > prevRsi) { reasons.push('RSI dönüş ↑'); conf += 8 }
-        if (currStoch !== null && currStoch < 20) { reasons.push(`StochRSI(14): ${currStoch.toFixed(0)}`); conf += 5 }
+        if (currStoch !== null && currStoch < 30) { reasons.push(`StochRSI(14): ${currStoch.toFixed(0)}`); conf += 5 }
         if (bullDiv) { reasons.push('Boğa uyumsuzluğu'); conf += 10 }
         if (volConfirm) { reasons.push('hacim teyidi'); conf += 5 }
         return { signal: 'BUY', reason: reasons.join(' · '), confidence: Math.min(conf, 92) }
       }
-      if (currRsi > 70) {
-        const reasons: string[] = [`RSI(14): ${currRsi.toFixed(1)} (Aşırı Alım)`]
-        let conf = 68
+      if (currRsi > 60) {
+        const isDeep = currRsi > 75
+        const reasons: string[] = [`RSI(14): ${currRsi.toFixed(1)} (${isDeep ? 'Aşırı Alım' : 'Yüksek Bölge'})`]
+        let conf = isDeep ? 75 : 55
         if (trendDown) { reasons.push('trend aşağı ↓'); conf += 8 }
         if (prevRsi && currRsi < prevRsi) { reasons.push('RSI dönüş ↓'); conf += 8 }
-        if (currStoch !== null && currStoch > 80) { reasons.push(`StochRSI(14): ${currStoch.toFixed(0)}`); conf += 5 }
+        if (currStoch !== null && currStoch > 70) { reasons.push(`StochRSI(14): ${currStoch.toFixed(0)}`); conf += 5 }
         if (bearDiv) { reasons.push('Ayı uyumsuzluğu'); conf += 10 }
-        if (!volConfirm) { reasons.push('⚠️ Hacim teyidi yok'); conf -= 15 }
+        if (!volConfirm && isDeep) { reasons.push('⚠️ Hacim teyidi yok'); conf -= 10 }
         return { signal: 'SELL', reason: reasons.join(' · '), confidence: Math.min(conf, 92) }
       }
-      // Mid-range signals with trend
-      if (currRsi < 40 && trendUp && (currStoch !== null && currStoch < 30)) {
-        return { signal: 'BUY', reason: `RSI(14): ${currRsi.toFixed(1)} düşük + trend↑ + StochRSI ${currStoch?.toFixed(0)}`, confidence: 55 }
+      // Mid-range signals with trend — daha geniş aralık
+      if (currRsi < 50 && trendUp) {
+        const conf = (currStoch !== null && currStoch < 40) ? 50 : 42
+        return { signal: 'BUY', reason: `RSI(14): ${currRsi.toFixed(1)} düşük-nötr + trend↑${currStoch !== null ? ` · StochRSI ${currStoch.toFixed(0)}` : ''}`, confidence: conf }
       }
-      if (currRsi > 60 && trendDown && (currStoch !== null && currStoch > 70)) {
-        return { signal: 'SELL', reason: `RSI(14): ${currRsi.toFixed(1)} yüksek + trend↓ + StochRSI ${currStoch?.toFixed(0)}`, confidence: 55 }
+      if (currRsi > 50 && trendDown) {
+        const conf = (currStoch !== null && currStoch > 60) ? 50 : 42
+        return { signal: 'SELL', reason: `RSI(14): ${currRsi.toFixed(1)} yüksek-nötr + trend↓${currStoch !== null ? ` · StochRSI ${currStoch.toFixed(0)}` : ''}`, confidence: conf }
       }
       return { signal: 'HOLD', reason: `RSI(14): ${currRsi.toFixed(1)} · StochRSI(14): ${currStoch?.toFixed(0) ?? 'N/A'} · Trend: ${trendUp ? '↑' : trendDown ? '↓' : '→'} (Nötr)`, confidence: 30 }
     }
@@ -364,15 +379,22 @@ export function generateSignal(
       const histMomentum_down = prev2H !== null && prevH !== null && currH < prevH && prevH < prev2H
 
       if (zeroCross_up) {
-        const conf = volConfirm ? 78 : 65
+        const conf = volConfirm ? 82 : 68
         return { signal: 'BUY', reason: `MACD histogram pozitife döndü${histMomentum_up ? ' + ivme artıyor' : ''}${volConfirm ? ' + hacim teyidi' : ''}`, confidence: conf }
       }
       if (zeroCross_down) {
-        const conf = volConfirm ? 76 : 63
+        const conf = volConfirm ? 80 : 66
         return { signal: 'SELL', reason: `MACD histogram negatife döndü${histMomentum_down ? ' + ivme artıyor' : ''}`, confidence: conf }
       }
-      if (histMomentum_up && currH > 0) return { signal: 'BUY', reason: 'MACD histogram ivmesi artıyor ↑', confidence: 55 }
-      if (histMomentum_down && currH < 0) return { signal: 'SELL', reason: 'MACD histogram ivmesi artıyor ↓', confidence: 55 }
+      if (histMomentum_up && currH > 0) return { signal: 'BUY', reason: 'MACD histogram ivmesi artıyor ↑', confidence: 60 }
+      if (histMomentum_down && currH < 0) return { signal: 'SELL', reason: 'MACD histogram ivmesi artıyor ↓', confidence: 60 }
+
+      // Histogram yön sinyali — güçlü pozitif veya negatif histogram
+      if (currH > 0 && currH > prevH) return { signal: 'BUY', reason: `MACD histogram pozitif ve yükseliyor (${currH.toFixed(4)})`, confidence: 48 }
+      if (currH < 0 && currH < prevH) return { signal: 'SELL', reason: `MACD histogram negatif ve düşüyor (${currH.toFixed(4)})`, confidence: 48 }
+      // Sadece pozitif/negatif yön
+      if (currH > 0) return { signal: 'BUY', reason: `MACD histogram pozitif (${currH.toFixed(4)})`, confidence: 38 }
+      if (currH < 0) return { signal: 'SELL', reason: `MACD histogram negatif (${currH.toFixed(4)})`, confidence: 38 }
 
       return { signal: 'HOLD', reason: `MACD(5,13,6) Histogram: ${currH.toFixed(4)}`, confidence: 25 }
     }
@@ -391,19 +413,35 @@ export function generateSignal(
       // Band bounce signals
       if (lastPrice <= currL) {
         const bounce = prevClose < currL && lastPrice > prevClose
-        const conf = bounce ? (volConfirm ? 80 : 68) : (volConfirm ? 70 : 58)
+        const conf = bounce ? (volConfirm ? 82 : 70) : (volConfirm ? 72 : 60)
         return { signal: 'BUY', reason: `Fiyat alt bandda (₺${currL.toFixed(2)})${bounce ? ' + sıçrama sinyali' : ''}${volConfirm ? ' + hacim teyidi' : ''} · Bant genişliği: %${bandWidth.toFixed(1)}`, confidence: conf }
       }
       if (lastPrice >= currU) {
         const reject = prevClose > currU && lastPrice < prevClose
-        const conf = reject ? (volConfirm ? 78 : 66) : (volConfirm ? 68 : 56)
+        const conf = reject ? (volConfirm ? 80 : 68) : (volConfirm ? 70 : 58)
         return { signal: 'SELL', reason: `Fiyat üst bandda (₺${currU.toFixed(2)})${reject ? ' + ret sinyali' : ''} · Bant genişliği: %${bandWidth.toFixed(1)}`, confidence: conf }
       }
 
-      // Squeeze detection (low volatility = potential breakout)
-      if (bandWidth < 3) {
-        return { signal: 'HOLD', reason: `Bollinger sıkışması! Bant genişliği: %${bandWidth.toFixed(1)} — kırılım bekleniyor`, confidence: 50 }
+      // Yakın-bant sinyalleri — bandın %15 yakınında sinyal üret
+      if (pricePos < 15) {
+        const conf = volConfirm ? 55 : 45
+        return { signal: 'BUY', reason: `Fiyat alt banda yakın (%${pricePos.toFixed(0)})${volConfirm ? ' + hacim teyidi' : ''} · Bant genişliği: %${bandWidth.toFixed(1)}`, confidence: conf }
       }
+      if (pricePos > 85) {
+        const conf = volConfirm ? 53 : 43
+        return { signal: 'SELL', reason: `Fiyat üst banda yakın (%${pricePos.toFixed(0)}) · Bant genişliği: %${bandWidth.toFixed(1)}`, confidence: conf }
+      }
+
+      // Squeeze detection (low volatility = potential breakout) — sıkışmada yön belirleme
+      if (bandWidth < 3) {
+        if (lastPrice > currM) return { signal: 'BUY', reason: `Bollinger sıkışması + fiyat orta bandın üstünde — yukarı kırılım beklentisi · Bant: %${bandWidth.toFixed(1)}`, confidence: 48 }
+        if (lastPrice < currM) return { signal: 'SELL', reason: `Bollinger sıkışması + fiyat orta bandın altında — aşağı kırılım beklentisi · Bant: %${bandWidth.toFixed(1)}`, confidence: 48 }
+        return { signal: 'HOLD', reason: `Bollinger sıkışması! Bant genişliği: %${bandWidth.toFixed(1)} — kırılım bekleniyor`, confidence: 45 }
+      }
+
+      // Orta bandın altında/üstünde yön sinyali
+      if (pricePos < 40) return { signal: 'BUY', reason: `Fiyat alt yarıda (%${pricePos.toFixed(0)}) · Bant: %${bandWidth.toFixed(1)}`, confidence: 35 }
+      if (pricePos > 60) return { signal: 'SELL', reason: `Fiyat üst yarıda (%${pricePos.toFixed(0)}) · Bant: %${bandWidth.toFixed(1)}`, confidence: 35 }
 
       return { signal: 'HOLD', reason: `Fiyat pozisyonu: %${pricePos.toFixed(0)} · Bant genişliği: %${bandWidth.toFixed(1)}`, confidence: 25 }
     }
@@ -429,14 +467,14 @@ export function generateSignal(
       let score = 0
       const reasons: string[] = []
 
-      // RSI (weight: 2) - hacim doğrulaması ile
-      if (currRsi < 35) { score += 2; reasons.push(`RSI ${currRsi.toFixed(0)} aşırı satım`) }
-      else if (currRsi > 65) {
-        if (volConfirm) { score -= 2; reasons.push(`RSI ${currRsi.toFixed(0)} aşırı alım (hacim teyitli)`) }
-        else { score -= 1; reasons.push(`⚠️ RSI ${currRsi.toFixed(0)} aşırı alım (hacim zayıf)`) }
+      // RSI (weight: 2) - genişletilmiş aralık
+      if (currRsi < 30) { score += 2.5; reasons.push(`RSI ${currRsi.toFixed(0)} aşırı satım`) }
+      else if (currRsi < 45) { score += 1.5; reasons.push(`RSI ${currRsi.toFixed(0)} düşük bölge`) }
+      else if (currRsi > 70) {
+        if (volConfirm) { score -= 2.5; reasons.push(`RSI ${currRsi.toFixed(0)} aşırı alım (hacim teyitli)`) }
+        else { score -= 1.5; reasons.push(`RSI ${currRsi.toFixed(0)} aşırı alım`) }
       }
-      else if (currRsi < 45) { score += 0.5; reasons.push(`RSI ${currRsi.toFixed(0)} düşük`) }
-      else if (currRsi > 55) { score -= 0.5; reasons.push(`RSI ${currRsi.toFixed(0)} yüksek`) }
+      else if (currRsi > 55) { score -= 1.5; reasons.push(`RSI ${currRsi.toFixed(0)} yüksek bölge`) }
 
       // SMA crossover (weight: 1.5)
       if (curr5 > curr10) { score += 1.5; reasons.push('SMA(5)>SMA(10)') }
@@ -462,9 +500,9 @@ export function generateSignal(
       if (volConfirm) { score += (score > 0 ? 0.5 : -0.5); reasons.push('hacim↑') }
 
       const absScore = Math.abs(score)
-      const confidence = Math.min(Math.round(absScore * 12 + 15), 92)
-      if (score >= 2.5) return { signal: 'BUY', reason: reasons.join(' · '), confidence }
-      if (score <= -2.5) return { signal: 'SELL', reason: reasons.join(' · '), confidence }
+      const confidence = Math.min(Math.round(absScore * 13 + 20), 92)
+      if (score >= 1.5) return { signal: 'BUY', reason: reasons.join(' · '), confidence }
+      if (score <= -1.5) return { signal: 'SELL', reason: reasons.join(' · '), confidence }
       return { signal: 'HOLD', reason: reasons.join(' · '), confidence: Math.min(confidence, 45) }
     }
     default:

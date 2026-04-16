@@ -8,14 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  Crown, Calendar, Clock, CreditCard, ExternalLink, ArrowRight, Shield
+  Crown, Calendar, Clock, ArrowRight, Shield, Smartphone
 } from 'lucide-react';
 
 export default function SubscriptionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isPremium, tier, expiresAt, isTrialActive, trialEndsAt, daysRemaining, loading, refetch } = useSubscription();
-  const [portalLoading, setPortalLoading] = useState(false);
   const success = searchParams.get('success');
 
   useEffect(() => {
@@ -24,23 +23,6 @@ export default function SubscriptionContent() {
       refetch();
     }
   }, [success, refetch]);
-
-  const handlePortal = async () => {
-    setPortalLoading(true);
-    try {
-      const res = await fetch('/api/stripe/portal', { method: 'POST' });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error(data.error || 'Portal açılamadı');
-      }
-    } catch {
-      toast.error('Bir hata oluştu');
-    } finally {
-      setPortalLoading(false);
-    }
-  };
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-';
@@ -86,7 +68,7 @@ export default function SubscriptionContent() {
               {!isTrialActive && expiresAt && (
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  Bir sonraki fatura: {formatDate(expiresAt)}
+                  Geçerlilik: {formatDate(expiresAt)}
                 </div>
               )}
               {daysRemaining !== null && (
@@ -118,26 +100,23 @@ export default function SubscriptionContent() {
         </CardContent>
       </Card>
 
-      {/* Manage */}
+      {/* Google Play Info */}
       {isPremium && !isTrialActive && (
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle className="text-lg">Ödeme Yönetimi</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Stripe portal üzerinden ödeme yönteminizi güncelleyebilir,
-              plan değiştirebilir veya aboneliğinizi iptal edebilirsiniz.
-            </p>
-            <Button
-              variant="outline"
-              onClick={handlePortal}
-              disabled={portalLoading}
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              {portalLoading ? 'Açılıyor...' : 'Ödeme Portalına Git'}
-              <ExternalLink className="h-3 w-3 ml-2" />
-            </Button>
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+              <Smartphone className="h-5 w-5 text-primary mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Google Play üzerinden yönetin</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aboneliğinizi Google Play Store uygulamasından yönetebilirsiniz.
+                  Google Play → Abonelikler bölümünden plan değiştirme veya iptal işlemi yapabilirsiniz.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

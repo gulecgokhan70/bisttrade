@@ -19,7 +19,7 @@ import {
   Settings,
   Loader2,
   PartyPopper,
-  ChevronRight,
+  Smartphone,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -45,64 +45,16 @@ export function PricingContent() {
   const { data: session } = useSession() || {}
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { isPremium, isTrialActive, tier, loading: subLoading, trialEndsAt, expiresAt } = useSubscription()
-  const [selectedPlan, setSelectedPlan] = useState<'MONTHLY' | 'YEARLY'>('YEARLY')
+  const { isPremium, isTrialActive, tier, loading: subLoading, trialEndsAt, expiresAt, daysRemaining } = useSubscription()
   const [couponCode, setCouponCode] = useState('')
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponResult, setCouponResult] = useState<any>(null)
-  const [checkoutLoading, setCheckoutLoading] = useState(false)
-  const [portalLoading, setPortalLoading] = useState(false)
 
   useEffect(() => {
     if (searchParams?.get('success') === 'true') {
       toast.success('Abonelik başarıyla aktif edildi! \u{1F389}')
     }
-    if (searchParams?.get('cancelled') === 'true') {
-      toast.info('Ödeme iptal edildi')
-    }
   }, [searchParams])
-
-  const handleCheckout = async () => {
-    if (!session?.user) {
-      router.push('/login')
-      return
-    }
-    setCheckoutLoading(true)
-    try {
-      const res = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: selectedPlan, couponCode: couponCode || undefined }),
-      })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        toast.error(data.error || 'Ödeme başlatılamadı')
-      }
-    } catch {
-      toast.error('Bir hata oluştu')
-    } finally {
-      setCheckoutLoading(false)
-    }
-  }
-
-  const handlePortal = async () => {
-    setPortalLoading(true)
-    try {
-      const res = await fetch('/api/stripe/portal', { method: 'POST' })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        toast.error(data.error || 'Portal açılamadı')
-      }
-    } catch {
-      toast.error('Bir hata oluştu')
-    } finally {
-      setPortalLoading(false)
-    }
-  }
 
   const handleValidateCoupon = async () => {
     if (!couponCode.trim()) return
@@ -115,7 +67,7 @@ export function PricingContent() {
         body: JSON.stringify({ code: couponCode }),
       })
       const data = await res.json()
-      if (res.ok) {
+      if (data.valid) {
         setCouponResult({ valid: true, ...data })
       } else {
         setCouponResult({ valid: false, error: data.error })
@@ -128,20 +80,23 @@ export function PricingContent() {
   }
 
   const handleRedeemCoupon = async () => {
+    if (!session?.user) {
+      router.push('/login')
+      return
+    }
     if (!couponCode.trim()) return
     setCouponLoading(true)
     try {
-      const res = await fetch('/api/coupon/redeem', {
+      const res = await fetch('/api/coupon/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: couponCode }),
+        body: JSON.stringify({ code: couponCode.trim() }),
       })
       const data = await res.json()
-      if (res.ok && data.success) {
+      if (data.success) {
         toast.success(data.message)
         setCouponCode('')
         setCouponResult(null)
-        // Refresh page to update subscription status
         setTimeout(() => window.location.reload(), 1500)
       } else {
         toast.error(data.error || 'Kupon kullanılamadı')
@@ -156,6 +111,14 @@ export function PricingContent() {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return ''
     return new Date(dateStr).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
+
+  if (subLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
   }
 
   return (
@@ -194,37 +157,12 @@ export function PricingContent() {
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handlePortal} disabled={portalLoading}>
-              {portalLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4 mr-2" />}
+            <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/subscription')}>
+              <Settings className="h-4 w-4 mr-2" />
               Aboneliği Yönet
             </Button>
           </CardContent>
         </Card>
-      )}
-
-      {/* Plan toggle */}
-      {!isPremium && (
-        <div className="flex justify-center">
-          <div className="flex items-center bg-muted rounded-lg p-1">
-            <button
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                selectedPlan === 'MONTHLY' ? 'bg-background shadow text-foreground' : 'text-muted-foreground'
-              }`}
-              onClick={() => setSelectedPlan('MONTHLY')}
-            >
-              Aylık
-            </button>
-            <button
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-                selectedPlan === 'YEARLY' ? 'bg-background shadow text-foreground' : 'text-muted-foreground'
-              }`}
-              onClick={() => setSelectedPlan('YEARLY')}
-            >
-              Yıllık
-              <Badge className="bg-emerald-500/10 text-emerald-500 border-0 text-xs">%17 Tasarruf</Badge>
-            </button>
-          </div>
-        </div>
       )}
 
       {/* Plans */}
@@ -277,16 +215,10 @@ export function PricingContent() {
                 Premium
               </h3>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold">
-                  {selectedPlan === 'MONTHLY' ? '₺49,90' : '₺499'}
-                </span>
-                <span className="text-muted-foreground">
-                  /{selectedPlan === 'MONTHLY' ? 'ay' : 'yıl'}
-                </span>
+                <span className="text-3xl font-bold">₺49,90</span>
+                <span className="text-muted-foreground">/ay</span>
               </div>
-              {selectedPlan === 'YEARLY' && (
-                <p className="text-sm text-emerald-500 font-medium">₺41,58/ay - Aylık ödemeye göre %17 tasarruf!</p>
-              )}
+              <p className="text-sm text-emerald-500 font-medium">Yıllık ₺499 - Aylık ödemeye göre %17 tasarruf!</p>
               <p className="text-sm text-muted-foreground">7 gün ücretsiz deneme ile başlayın</p>
             </div>
           </CardHeader>
@@ -300,19 +232,14 @@ export function PricingContent() {
               ))}
             </ul>
             {!isPremium && (
-              <Button
-                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold mt-4"
-                size="lg"
-                onClick={handleCheckout}
-                disabled={checkoutLoading}
-              >
-                {checkoutLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-2" />
-                )}
-                7 Gün Ücretsiz Dene
-              </Button>
+              <div className="space-y-3 mt-4">
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Smartphone className="h-4 w-4" />
+                    <span>Google Play Store üzerinden abone olabilirsiniz</span>
+                  </div>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -326,12 +253,16 @@ export function PricingContent() {
               <Gift className="h-5 w-5 text-primary" />
               <h3 className="font-semibold">Kupon Kodu</h3>
             </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Kupon kodunuz varsa aşağıya girerek Premium üyeliğinizi aktifleştirebilirsiniz.
+            </p>
             <div className="flex gap-3">
               <Input
                 placeholder="Kupon kodunuzu girin"
                 value={couponCode}
                 onChange={e => setCouponCode(e.target.value.toUpperCase())}
                 className="max-w-xs uppercase"
+                onKeyDown={(e) => e.key === 'Enter' && (couponResult?.valid && couponResult?.discountPercent === 100 ? handleRedeemCoupon() : handleValidateCoupon())}
               />
               {couponResult?.valid && couponResult?.discountPercent === 100 ? (
                 <Button onClick={handleRedeemCoupon} disabled={couponLoading}>
@@ -350,7 +281,9 @@ export function PricingContent() {
                 {couponResult.valid ? (
                   <div className="flex items-center gap-2">
                     <PartyPopper className="h-4 w-4" />
-                    {couponResult.message}
+                    {couponResult.discountPercent === 100
+                      ? `%100 indirim! “Kullan” butonuna tıklayın.`
+                      : `%${couponResult.discountPercent} indirim!`}
                   </div>
                 ) : (
                   couponResult.error
@@ -364,7 +297,7 @@ export function PricingContent() {
       {/* Security note */}
       <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
         <Shield className="h-4 w-4" />
-        <span>Güvenli ödeme Stripe altyapısı ile sağlanmaktadır</span>
+        <span>Güvenli ödeme Google Play altyapısı ile sağlanmaktadır</span>
       </div>
     </div>
   )

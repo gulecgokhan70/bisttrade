@@ -62,17 +62,15 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
 export async function activateSubscription(
   userId: string,
   plan: string,
-  stripeSubscriptionId: string,
-  stripeCustomerId: string,
-  periodEnd: Date
+  periodEnd: Date,
+  purchaseSource?: string,
+  purchaseToken?: string
 ) {
   await prisma.user.update({
     where: { id: userId },
     data: {
       subscriptionTier: 'PREMIUM',
       subscriptionExpiresAt: periodEnd,
-      stripeCustomerId,
-      stripeSubscriptionId,
     },
   });
 
@@ -81,17 +79,16 @@ export async function activateSubscription(
       userId,
       plan,
       status: 'ACTIVE',
-      stripeSubscriptionId,
-      stripeCustomerId,
       currentPeriodEnd: periodEnd,
       currentPeriodStart: new Date(),
     },
   });
 }
 
-export async function deactivateSubscription(stripeSubscriptionId: string) {
+export async function deactivateSubscription(userId: string) {
   const sub = await prisma.subscription.findFirst({
-    where: { stripeSubscriptionId },
+    where: { userId, status: 'ACTIVE' },
+    orderBy: { createdAt: 'desc' },
   });
 
   if (sub) {
@@ -101,10 +98,9 @@ export async function deactivateSubscription(stripeSubscriptionId: string) {
     });
 
     await prisma.user.update({
-      where: { id: sub.userId },
+      where: { id: userId },
       data: {
         subscriptionTier: 'FREE',
-        stripeSubscriptionId: null,
       },
     });
   }

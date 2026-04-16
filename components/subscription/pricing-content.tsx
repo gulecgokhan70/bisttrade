@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,12 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   Crown, Check, Zap, Shield, BarChart3, Bot,
-  Radio, Bell, Ticket, ArrowRight, Sparkles, Star
+  Radio, Bell, Ticket, Sparkles, Star, Smartphone
 } from 'lucide-react';
 
 const FREE_FEATURES = [
   { icon: BarChart3, text: 'Piyasa Listesi' },
-  { icon: ArrowRight, text: 'Temel Al/Sat' },
+  { icon: Shield, text: 'Temel Al/Sat' },
   { icon: Shield, text: 'Portföy Yönetimi' },
   { icon: Bell, text: '3 Alarm Hakkı' },
 ];
@@ -32,41 +32,10 @@ const PREMIUM_FEATURES = [
 
 export default function PricingContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { data: session } = useSession() || {};
   const { isPremium, tier, loading } = useSubscription();
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const cancelled = searchParams.get('cancelled');
-
-  const handleCheckout = async (plan: 'MONTHLY' | 'YEARLY') => {
-    if (!session?.user) {
-      toast.error('Önce giriş yapmalısınız');
-      router.push('/login');
-      return;
-    }
-
-    setCheckoutLoading(plan);
-    try {
-      const res = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
-      });
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error(data.error || 'Ödeme sayfası açılamadı');
-      }
-    } catch {
-      toast.error('Bir hata oluştu');
-    } finally {
-      setCheckoutLoading(null);
-    }
-  };
 
   const handleCoupon = async () => {
     if (!session?.user) {
@@ -111,12 +80,6 @@ export default function PricingContent() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      {cancelled && (
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-center text-yellow-400">
-          Ödeme iptal edildi. Dilediğiniz zaman tekrar deneyebilirsiniz.
-        </div>
-      )}
-
       {/* Header */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium">
@@ -147,7 +110,7 @@ export default function PricingContent() {
       )}
 
       {/* Plans */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
         {/* Free Plan */}
         <Card className="border-border/50">
           <CardHeader className="text-center pb-2">
@@ -172,7 +135,7 @@ export default function PricingContent() {
           </CardContent>
         </Card>
 
-        {/* Monthly Plan */}
+        {/* Premium Plan */}
         <Card className="border-primary/50 relative">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
             <Badge className="bg-primary text-primary-foreground px-3">
@@ -180,11 +143,12 @@ export default function PricingContent() {
             </Badge>
           </div>
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-lg">Aylık Premium</CardTitle>
+            <CardTitle className="text-lg">Premium</CardTitle>
             <div className="mt-2">
               <span className="text-4xl font-bold">₺49<span className="text-2xl">,90</span></span>
               <span className="text-muted-foreground"> / ay</span>
             </div>
+            <p className="text-xs text-emerald-400 mt-1">Yıllık ₺499 (17% tasarruf)</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <ul className="space-y-3">
@@ -195,88 +159,49 @@ export default function PricingContent() {
                 </li>
               ))}
             </ul>
-            <Button
-              className="w-full bg-primary hover:bg-primary/90"
-              onClick={() => handleCheckout('MONTHLY')}
-              disabled={!!checkoutLoading || isPremium}
-            >
-              {checkoutLoading === 'MONTHLY' ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  Yükleniyor...
-                </span>
-              ) : isPremium ? 'Aktif' : 'Hemen Başla'}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Yearly Plan */}
-        <Card className="border-emerald-500/50 relative">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <Badge className="bg-emerald-500 text-white px-3">
-              2 Ay Hediye
-            </Badge>
-          </div>
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-lg">Yıllık Premium</CardTitle>
-            <div className="mt-2">
-              <span className="text-4xl font-bold">₺499</span>
-              <span className="text-muted-foreground"> / yıl</span>
-            </div>
-            <p className="text-xs text-emerald-400 mt-1">Aylık ₺41,58 (17% tasarruf)</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-3">
-              {PREMIUM_FEATURES.map((f, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                  {f.text}
-                </li>
-              ))}
-            </ul>
-            <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => handleCheckout('YEARLY')}
-              disabled={!!checkoutLoading || isPremium}
-            >
-              {checkoutLoading === 'YEARLY' ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  Yükleniyor...
-                </span>
-              ) : isPremium ? 'Aktif' : 'Yıllık Başla'}
-            </Button>
+            {!isPremium && (
+              <div className="space-y-2">
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Smartphone className="h-4 w-4 text-primary" />
+                    <span>Google Play Store üzerinden abone olun</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Coupon Section */}
-      <Card className="border-border/50">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center gap-2 shrink-0">
-              <Ticket className="h-5 w-5 text-primary" />
-              <span className="font-medium">Kupon Kodunuz Var Mı?</span>
+      {!isPremium && (
+        <Card className="border-border/50">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex items-center gap-2 shrink-0">
+                <Ticket className="h-5 w-5 text-primary" />
+                <span className="font-medium">Kupon Kodunuz Var Mı?</span>
+              </div>
+              <div className="flex flex-1 gap-2 w-full sm:w-auto">
+                <Input
+                  placeholder="Kupon kodunu girin"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  className="uppercase"
+                  onKeyDown={(e) => e.key === 'Enter' && handleCoupon()}
+                />
+                <Button
+                  onClick={handleCoupon}
+                  disabled={couponLoading || !couponCode.trim()}
+                  variant="outline"
+                >
+                  {couponLoading ? 'Kontrol...' : 'Uygula'}
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-1 gap-2 w-full sm:w-auto">
-              <Input
-                placeholder="Kupon kodunu girin"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                className="uppercase"
-                onKeyDown={(e) => e.key === 'Enter' && handleCoupon()}
-              />
-              <Button
-                onClick={handleCoupon}
-                disabled={couponLoading || !couponCode.trim()}
-                variant="outline"
-              >
-                {couponLoading ? 'Kontrol...' : 'Uygula'}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

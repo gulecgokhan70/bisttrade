@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // For partial discount coupons, return discount info for Stripe checkout
+    // For partial discount coupons, return discount info
     await prisma.$transaction([
       prisma.coupon.update({
         where: { id: coupon.id },

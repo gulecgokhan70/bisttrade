@@ -1,14 +1,9 @@
-import Stripe from 'stripe';
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia' as any,
-  typescript: true,
-});
+// Stripe kaldırıldı - iyzico ve Google Play Billing kullanılacak
 
 export const PLANS = {
   MONTHLY: {
     name: 'Aylık Premium',
-    price: 4990, // kuруş cinsinden
+    price: 4990,
     priceDisplay: '49,90',
     currency: 'try',
     interval: 'month' as const,
