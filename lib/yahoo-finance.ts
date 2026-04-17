@@ -224,8 +224,8 @@ export async function fetchYahooHistory(
         const istHour = parseInt(ts.toLocaleString('en-US', { hour: '2-digit', hour12: false, timeZone: 'Europe/Istanbul' }))
         const istMin = parseInt(ts.toLocaleString('en-US', { minute: '2-digit', timeZone: 'Europe/Istanbul' }))
         const istTime = istHour * 60 + istMin
-        // BIST: 10:00 - 18:10 (600 - 1090 minutes)
-        if (istTime < 600 || istTime > 1090) continue
+        // BIST: 09:55 - 18:10 (595 - 1090 minutes)
+        if (istTime < 595 || istTime > 1090) continue
         // For 1D: only show today's data
         if (period === '1D' && istDateStr !== nowIst) continue
       }

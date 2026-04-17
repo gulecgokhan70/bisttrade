@@ -8,7 +8,7 @@ import { fetchYahooHistory } from '@/lib/yahoo-finance'
 import { generateSignal } from '@/lib/technical-analysis'
 import { generateMultiTimeframeAnalysis, type MultiTimeframeData } from '@/lib/technical-indicators'
 
-// Check if BIST market is open (Mon-Fri, 10:00-18:10 Istanbul time)
+// Check if BIST market is open (Mon-Fri, 09:55-18:10 Istanbul time)
 function isBISTOpen(): boolean {
   const now = new Date()
   const istanbulStr = now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' })
@@ -16,7 +16,7 @@ function isBISTOpen(): boolean {
   const day = istanbul.getDay()
   if (day === 0 || day === 6) return false
   const mins = istanbul.getHours() * 60 + istanbul.getMinutes()
-  return mins >= 600 && mins <= 1090 // 10:00 - 18:10
+  return mins >= 595 && mins <= 1090 // 09:55 - 18:10
 }
 
 // MTF cache to avoid fetching for each strategy on same stock

@@ -52,7 +52,7 @@ export function TradeContent() {
   const [inWatchlist, setInWatchlist] = useState(false)
   const [hoveredPrice, setHoveredPrice] = useState<number | null>(null)
 
-  // BIST market hours check (Mon-Fri 10:00-18:00 Istanbul / UTC+3)
+  // BIST market hours check (Mon-Fri 09:55-18:00 Istanbul / UTC+3)
   const isBistOpen = useCallback(() => {
     const now = new Date()
     // Istanbul is UTC+3
@@ -65,7 +65,7 @@ export function TradeContent() {
     const istDay = (utcH + 3 >= 24) ? (day + 1) % 7 : day
     if (istDay === 0 || istDay === 6) return false // weekend
     const istTime = istH * 60 + istMin
-    return istTime >= 600 && istTime < 1080 // 10:00 - 18:00
+    return istTime >= 595 && istTime < 1080 // 09:55 - 18:00
   }, [])
 
   const [marketOpen, setMarketOpen] = useState(true)

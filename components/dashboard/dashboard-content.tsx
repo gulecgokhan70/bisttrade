@@ -23,7 +23,7 @@ function isBISTOpen(): boolean {
   const day = istanbul.getDay()
   if (day === 0 || day === 6) return false
   const mins = istanbul.getHours() * 60 + istanbul.getMinutes()
-  return mins >= 600 && mins <= 1090 // 10:00 - 18:10
+  return mins >= 595 && mins <= 1090 // 09:55 - 18:10
 }
 
 export function DashboardContent() {

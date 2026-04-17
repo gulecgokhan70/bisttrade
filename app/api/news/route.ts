@@ -202,8 +202,8 @@ async function fetchFinanceNews(): Promise<NewsItem[]> {
         // General market news items
         allNews.push({
           id: 'info-1',
-          title: 'BİST işlem saatleri: 10:00 - 18:00',
-          summary: 'Borsa İstanbul\'da sürekli işlem seansı 10:00-18:00 saatleri arasında gerçekleşmektedir. Veriler 15 dakika gecikmelidir.',
+          title: 'BİST işlem saatleri: 09:55 - 18:10',
+          summary: 'Borsa İstanbul\'da açılış seansı 09:55\'te başlar, sürekli işlem seansı 10:00-18:00 saatleri arasında gerçekleşir. Veriler 15 dakika gecikmelidir.',
           source: 'BIST Trade',
           url: '#',
           publishedAt: new Date(nowDate.getTime() - 60 * 60000).toISOString(),

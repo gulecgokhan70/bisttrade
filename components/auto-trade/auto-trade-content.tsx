@@ -106,7 +106,7 @@ export function AutoTradeContent() {
     if (userId) fetchStrategies()
   }, [userId, fetchStrategies])
 
-  // Check if BIST market is open (Mon-Fri, 10:00-18:10 Istanbul time)
+  // Check if BIST market is open (Mon-Fri, 09:55-18:10 Istanbul time)
   const isBISTOpen = useCallback(() => {
     const now = new Date()
     const istanbul = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }))
@@ -115,7 +115,7 @@ export function AutoTradeContent() {
     const h = istanbul.getHours()
     const m = istanbul.getMinutes()
     const mins = h * 60 + m
-    return mins >= 600 && mins <= 1090
+    return mins >= 595 && mins <= 1090
   }, [])
 
   // Auto-execute: normal every 60s, aggressive every 30s
