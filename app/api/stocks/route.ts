@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchMultiSourceQuote, fetchMultiSourceBulkQuotes } from '@/lib/multi-source-finance'
 
-// --- Server-side in-memory cache (30s TTL) ---
-const CACHE_TTL = 30 * 1000 // 30 seconds
+// --- Server-side in-memory cache (60s TTL) ---
+const CACHE_TTL = 60 * 1000 // 60 seconds — performans optimizasyonu
 let _bulkCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 }
 let _singleCache: Map<string, { data: any; timestamp: number }> = new Map()
 
@@ -126,7 +126,9 @@ export async function GET(request: Request) {
     // Background: persist live prices to DB (fire-and-forget)
     _persistLivePrices(stocks, multiSourceData).catch(() => {})
 
-    return NextResponse.json(updatedStocks)
+    return NextResponse.json(updatedStocks, {
+      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+    })
   } catch (error: any) {
     console.error('Stocks API error:', error)
     return NextResponse.json({ error: 'Hisseler alınamadı' }, { status: 500 })

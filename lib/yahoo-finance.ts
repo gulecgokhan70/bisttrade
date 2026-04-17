@@ -13,11 +13,11 @@ export interface YahooQuote {
 
 // In-memory cache for individual quotes
 const priceCache: Map<string, { data: YahooQuote; timestamp: number }> = new Map()
-const CACHE_TTL = 5000 // 5 seconds for individual
+const CACHE_TTL = 30_000 // 30 seconds for individual
 
 // Bulk cache for all stocks
 let bulkCache: { data: Map<string, YahooQuote>; timestamp: number } | null = null
-const BULK_CACHE_TTL = 5000 // 5 seconds for bulk
+const BULK_CACHE_TTL = 60_000 // 60 seconds for bulk — Yahoo rate limit koruması
 
 // Track ongoing bulk fetch to prevent duplicate requests
 let bulkFetchPromise: Promise<Map<string, YahooQuote>> | null = null
@@ -35,7 +35,7 @@ const YAHOO_HEADERS = {
 }
 
 // Robust fetch with endpoint fallback
-async function yahooFetch(path: string, timeoutMs: number = 8000): Promise<any | null> {
+async function yahooFetch(path: string, timeoutMs: number = 5000): Promise<any | null> {
   for (const endpoint of YAHOO_ENDPOINTS) {
     try {
       const res = await fetch(`${endpoint}${path}`, {
