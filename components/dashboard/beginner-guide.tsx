@@ -58,7 +58,7 @@ export function BeginnerGuide() {
               <Lightbulb className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold">Nasıl Başlanır?</h3>
+              <h3 className="text-sm font-semibold text-foreground">Nasıl Başlanır?</h3>
               <p className="text-[10px] text-muted-foreground">BİST simülatörü rehberi</p>
             </div>
           </div>
@@ -70,11 +70,11 @@ export function BeginnerGuide() {
           {tips.map((tip, i) => {
             const Icon = tip.icon
             return (
-              <div key={i} className="p-2.5 rounded-lg bg-background/60 border border-border/30">
+              <div key={i} className="p-2.5 rounded-lg bg-card border border-border/50">
                 <div className={`w-7 h-7 rounded-lg ${tip.color} flex items-center justify-center mb-1.5`}>
                   <Icon className="h-3.5 w-3.5" />
                 </div>
-                <p className="text-xs font-semibold mb-0.5">{tip.title}</p>
+                <p className="text-xs font-semibold text-card-foreground mb-0.5">{tip.title}</p>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">{tip.description}</p>
               </div>
             )

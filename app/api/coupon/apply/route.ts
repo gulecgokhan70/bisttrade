@@ -4,11 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 import { activateCoupon } from '@/lib/subscription';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 });
     }
 
@@ -17,7 +19,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kupon kodu giriniz' }, { status: 400 });
     }
 
-    const result = await activateCoupon(session.user.id, code);
+    // Kullanıcı DB'de var mı kontrol et
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+      console.error('Coupon apply: User not found in DB:', userId);
+      return NextResponse.json({ error: 'Kullanıcı bulunamadı. Lütfen tekrar giriş yapın.' }, { status: 400 });
+    }
+
+    const result = await activateCoupon(userId, code);
 
     const isUnlimited = result.durationDays >= 99999;
     const msg = isUnlimited

@@ -8,11 +8,12 @@ import { getSubscriptionStatus } from '@/lib/subscription';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id;
+    if (!userId) {
       return NextResponse.json({ error: 'Giriş yapmalısınız' }, { status: 401 });
     }
 
-    const status = await getSubscriptionStatus(session.user.id);
+    const status = await getSubscriptionStatus(userId);
     return NextResponse.json(status);
   } catch (error) {
     console.error('Subscription status error:', error);
