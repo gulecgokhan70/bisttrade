@@ -100,6 +100,16 @@ export function LoginForm() {
           </div>
         </div>
 
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => router.push('/forgot-password')}
+            className="text-xs text-muted-foreground hover:text-primary hover:underline transition-colors"
+          >
+            Şifremi Unuttum
+          </button>
+        </div>
+
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
         </Button>
