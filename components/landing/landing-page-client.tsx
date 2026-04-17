@@ -303,15 +303,44 @@ export function LandingPageClient() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-display font-bold text-xs">
-              BT
+      <footer className="border-t pt-8 pb-6">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-display font-bold text-xs">
+                BT
+              </div>
+              <span className="text-sm text-muted-foreground">BIST Trade — Sanal Borsa Simülatörü</span>
             </div>
-            <span className="text-sm text-muted-foreground">BIST Trade — Sanal Borsa Simülatörü</span>
+            <p className="text-xs text-muted-foreground">Tüm işlemler sanal olup gerçek para kullanılmamaktadır.</p>
           </div>
-          <p className="text-xs text-muted-foreground">Tüm işlemler sanal olup gerçek para kullanılmamaktadır.</p>
+
+          {/* Yasal Uyarı */}
+          <div className="border-t pt-5">
+            <div className="bg-muted/40 rounded-lg p-4 space-y-2">
+              <p className="text-[11px] leading-relaxed text-muted-foreground/80 font-medium">
+                ⚖️ Yasal Uyarı
+              </p>
+              <p className="text-[10px] leading-relaxed text-muted-foreground/70">
+                BIST Trade, tamamen <strong className="text-muted-foreground/90">eğitim ve simülasyon amaçlı</strong> geliştirilmiş bir sanal borsa uygulamasıdır.
+                Bu platformda gerçekleştirilen tüm alım-satım işlemleri sanal olup gerçek para veya finansal varlık kullanılmamaktadır.
+                Uygulama içerisinde sunulan veriler, analizler, sinyaller ve öneriler hiçbir şekilde <strong className="text-muted-foreground/90">yatırım danışmanlığı veya yatırım tavsiyesi</strong> niteliği taşımamaktadır.
+              </p>
+              <p className="text-[10px] leading-relaxed text-muted-foreground/70">
+                Sermaye Piyasası Kurulu (SPK) düzenlemeleri gereğince, yatırım danışmanlığı hizmeti ancak yetkili kuruluşlar tarafından kişilerin risk ve getiri tercihleri dikkate alınarak verilebilir.
+                Bu uygulamadaki içerikler genel bilgilendirme amacı taşır ve herhangi bir menkul kıymetin alım-satımını özendirecek şekilde yorumlanamaz.
+                Gerçek yatırım kararlarınız için mutlaka lisanslı bir yatırım danışmanına başvurunuz.
+              </p>
+              <p className="text-[10px] leading-relaxed text-muted-foreground/70">
+                Fiyat verileri üçüncü parti kaynaklardan sağlanmakta olup 15 dakikaya kadar gecikme içerebilir.
+                Verilerin doğruluğu ve güncelliği konusunda herhangi bir garanti verilmemektedir.
+                BIST Trade, bu verilere dayanılarak yapılabilecek herhangi bir gerçek yatırım işleminden doğacak zararlardan sorumlu tutulamaz.
+              </p>
+              <p className="text-[10px] text-muted-foreground/50 mt-1">
+                © {new Date().getFullYear()} BIST Trade. Tüm hakları saklıdır. Bu uygulama Borsa İstanbul A.Ş. ile herhangi bir resmi bağlantıya sahip değildir.
+              </p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

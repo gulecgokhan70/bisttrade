@@ -81,6 +81,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <main className="p-3 sm:p-6">
           {children}
         </main>
+
+        {/* Yasal Uyarı */}
+        <footer className="px-3 sm:px-6 pb-4 pt-2">
+          <div className="bg-muted/30 rounded-lg px-4 py-3">
+            <p className="text-[10px] leading-relaxed text-muted-foreground/60">
+              ⚖️ <strong className="text-muted-foreground/70">Yasal Uyarı:</strong> BIST Trade eğitim ve simülasyon amaçlı bir uygulamadır. Tüm işlemler sanaldır, gerçek para kullanılmamaktadır.
+              Sunulan veriler, analizler ve sinyaller yatırım danışmanlığı veya yatırım tavsiyesi niteliği taşımaz.
+              Fiyat verileri üçüncü parti kaynaklardan sağlanır ve 15 dakikaya kadar gecikme içerebilir.
+              Gerçek yatırım kararlarınız için lisanslı bir yatırım danışmanına başvurunuz. Bu uygulama Borsa İstanbul A.Ş. ile resmi bir bağlantıya sahip değildir.
+            </p>
+          </div>
+        </footer>
       </div>
 
     </div>
