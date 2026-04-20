@@ -1,9 +1,9 @@
-// Yahoo-first finance data provider
-// Yahoo Finance is the single source of truth for all price data.
-// Bigpara is ONLY used as a last-resort fallback for stocks missing from Yahoo.
+// Multi-source finance data provider
+// Priority: Yahoo Finance → Bigpara → İş Yatırım (3 kademeli fallback)
 
 import { fetchYahooQuote, fetchYahooBulkQuotes, type YahooQuote } from './yahoo-finance'
 import { fetchBigparaQuote, fetchBigparaBulkQuotes, type BigparaQuote } from './bigpara-finance'
+import { fetchIsyatirimQuote } from './isyatirim-finance'
 
 export interface StockQuote {
   currentPrice: number
@@ -12,18 +12,18 @@ export interface StockQuote {
   dayLow: number
   volume: number
   marketCap?: number
-  source: 'yahoo' | 'bigpara' | 'db'
+  source: 'yahoo' | 'bigpara' | 'isyatirim' | 'db'
 }
 
 /**
  * Fetch a single stock quote.
- * Priority: Yahoo Finance → Bigpara (only if Yahoo fails) → null
+ * Priority: Yahoo Finance → Bigpara → İş Yatırım → null
  */
 export async function fetchMultiSourceQuote(
   yahooSymbol: string,
   symbol: string
 ): Promise<StockQuote | null> {
-  // Try Yahoo first (primary and only source)
+  // 1) Yahoo Finance (birincil kaynak)
   try {
     const yahooQuote = await fetchYahooQuote(yahooSymbol)
     if (yahooQuote && yahooQuote.currentPrice > 0) {
@@ -31,7 +31,7 @@ export async function fetchMultiSourceQuote(
     }
   } catch {}
 
-  // Fallback to Bigpara ONLY if Yahoo returned nothing
+  // 2) Bigpara (ikincil kaynak)
   try {
     const bigparaQuote = await fetchBigparaQuote(symbol)
     if (bigparaQuote && bigparaQuote.currentPrice > 0) {
@@ -39,19 +39,35 @@ export async function fetchMultiSourceQuote(
     }
   } catch {}
 
+  // 3) İş Yatırım (üçüncü kaynak — EOD verisi)
+  try {
+    const isyQuote = await fetchIsyatirimQuote(yahooSymbol)
+    if (isyQuote && isyQuote.close > 0) {
+      return {
+        currentPrice: isyQuote.close,
+        previousClose: isyQuote.close, // EOD — kapanış fiyatı
+        dayHigh: isyQuote.high,
+        dayLow: isyQuote.low,
+        volume: isyQuote.volume,
+        marketCap: isyQuote.marketCap > 0 ? isyQuote.marketCap : undefined,
+        source: 'isyatirim',
+      }
+    }
+  } catch {}
+
   return null
 }
 
 /**
- * Fetch bulk quotes - Yahoo as single source.
- * Bigpara fills in ONLY stocks that Yahoo couldn't provide.
+ * Fetch bulk quotes - 3 kademeli fallback.
+ * Yahoo → Bigpara → İş Yatırım (eksik hisseler için tek tek)
  */
 export async function fetchMultiSourceBulkQuotes(
   yahooSymbols: string[]
 ): Promise<Map<string, StockQuote>> {
   const results = new Map<string, StockQuote>()
 
-  // Step 1: Fetch all from Yahoo (primary source)
+  // Step 1: Yahoo Finance (birincil — toplu çekim)
   let yahooData = new Map<string, YahooQuote>()
   try {
     yahooData = await fetchYahooBulkQuotes(yahooSymbols)
@@ -63,18 +79,45 @@ export async function fetchMultiSourceBulkQuotes(
     }
   }
 
-  // Step 2: Only fetch Bigpara if there are gaps
-  const missing = yahooSymbols.filter(s => !results.has(s))
-  if (missing.length > 0) {
+  // Step 2: Bigpara (ikincil — eksik hisseler için toplu çekim)
+  const missingAfterYahoo = yahooSymbols.filter(s => !results.has(s))
+  if (missingAfterYahoo.length > 0) {
     try {
       const bigparaData = await fetchBigparaBulkQuotes()
-      for (const sym of missing) {
+      for (const sym of missingAfterYahoo) {
         const bpQuote = bigparaData.get(sym) ?? bigparaData.get(sym.replace('.IS', ''))
         if (bpQuote && bpQuote.currentPrice > 0) {
           results.set(sym, { ...bpQuote, source: 'bigpara' })
         }
       }
     } catch {}
+  }
+
+  // Step 3: İş Yatırım (üçüncü — hâlâ eksik olanlar için tek tek çekim)
+  const missingAfterBigpara = yahooSymbols.filter(s => !results.has(s))
+  if (missingAfterBigpara.length > 0) {
+    // Paralel çekim — en fazla 10 tane aynı anda
+    const batchSize = 10
+    for (let i = 0; i < missingAfterBigpara.length; i += batchSize) {
+      const batch = missingAfterBigpara.slice(i, i + batchSize)
+      const promises = batch.map(async (sym) => {
+        try {
+          const isyQuote = await fetchIsyatirimQuote(sym)
+          if (isyQuote && isyQuote.close > 0) {
+            results.set(sym, {
+              currentPrice: isyQuote.close,
+              previousClose: isyQuote.close,
+              dayHigh: isyQuote.high,
+              dayLow: isyQuote.low,
+              volume: isyQuote.volume,
+              marketCap: isyQuote.marketCap > 0 ? isyQuote.marketCap : undefined,
+              source: 'isyatirim',
+            })
+          }
+        } catch {}
+      })
+      await Promise.all(promises)
+    }
   }
 
   return results
