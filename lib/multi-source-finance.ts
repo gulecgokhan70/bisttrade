@@ -1,7 +1,6 @@
 // Multi-source finance data provider
-// Priority: CollectAPI → Yahoo Finance → Bigpara (3 kademeli fallback)
+// Priority: Yahoo Finance → Bigpara (2 kademeli fallback)
 
-import { fetchCollectApiQuote, fetchCollectApiBulkQuotes } from './collectapi-finance'
 import { fetchYahooQuote, fetchYahooBulkQuotes, type YahooQuote } from './yahoo-finance'
 import { fetchBigparaQuote, fetchBigparaBulkQuotes, type BigparaQuote } from './bigpara-finance'
 
@@ -12,26 +11,18 @@ export interface StockQuote {
   dayLow: number
   volume: number
   marketCap?: number
-  source: 'collectapi' | 'yahoo' | 'bigpara' | 'db'
+  source: 'yahoo' | 'bigpara' | 'db'
 }
 
 /**
  * Fetch a single stock quote.
- * Priority: CollectAPI → Yahoo Finance → Bigpara → null
+ * Priority: Yahoo Finance → Bigpara → null
  */
 export async function fetchMultiSourceQuote(
   yahooSymbol: string,
   symbol: string
 ): Promise<StockQuote | null> {
-  // 1) CollectAPI (birincil kaynak)
-  try {
-    const collectQuote = await fetchCollectApiQuote(yahooSymbol)
-    if (collectQuote && collectQuote.currentPrice > 0) {
-      return { ...collectQuote, source: 'collectapi' }
-    }
-  } catch {}
-
-  // 2) Yahoo Finance (ikincil kaynak)
+  // 1) Yahoo Finance (birincil kaynak)
   try {
     const yahooQuote = await fetchYahooQuote(yahooSymbol)
     if (yahooQuote && yahooQuote.currentPrice > 0) {
@@ -39,7 +30,7 @@ export async function fetchMultiSourceQuote(
     }
   } catch {}
 
-  // 3) Bigpara (üçüncü kaynak)
+  // 2) Bigpara (ikincil kaynak)
   try {
     const bigparaQuote = await fetchBigparaQuote(symbol)
     if (bigparaQuote && bigparaQuote.currentPrice > 0) {
@@ -51,39 +42,25 @@ export async function fetchMultiSourceQuote(
 }
 
 /**
- * Fetch bulk quotes - 3 kademeli fallback.
- * CollectAPI → Yahoo → Bigpara
+ * Fetch bulk quotes - 2 kademeli fallback.
+ * Yahoo → Bigpara
  */
 export async function fetchMultiSourceBulkQuotes(
   yahooSymbols: string[]
 ): Promise<Map<string, StockQuote>> {
   const results = new Map<string, StockQuote>()
 
-  // Step 1: CollectAPI (birincil — toplu çekim, tek API call)
+  // Step 1: Yahoo Finance (birincil — toplu çekim)
   try {
-    const collectData = await fetchCollectApiBulkQuotes()
-    for (const sym of yahooSymbols) {
-      const cQuote = collectData.get(sym) ?? collectData.get(sym.replace('.IS', ''))
-      if (cQuote && cQuote.currentPrice > 0) {
-        results.set(sym, { ...cQuote, source: 'collectapi' })
+    const yahooData = await fetchYahooBulkQuotes(yahooSymbols)
+    for (const [sym, quote] of yahooData) {
+      if (quote && quote.currentPrice > 0) {
+        results.set(sym, { ...quote, source: 'yahoo' })
       }
     }
   } catch {}
 
-  // Step 2: Yahoo Finance (ikincil — eksik hisseler için toplu çekim)
-  const missingAfterCollect = yahooSymbols.filter(s => !results.has(s))
-  if (missingAfterCollect.length > 0) {
-    try {
-      const yahooData = await fetchYahooBulkQuotes(missingAfterCollect)
-      for (const [sym, quote] of yahooData) {
-        if (quote && quote.currentPrice > 0) {
-          results.set(sym, { ...quote, source: 'yahoo' })
-        }
-      }
-    } catch {}
-  }
-
-  // Step 3: Bigpara (üçüncü — hâlâ eksik olanlar için toplu çekim)
+  // Step 2: Bigpara (ikincil — eksik hisseler için toplu çekim)
   const missingAfterYahoo = yahooSymbols.filter(s => !results.has(s))
   if (missingAfterYahoo.length > 0) {
     try {

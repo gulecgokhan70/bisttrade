@@ -167,3 +167,141 @@ function parseBigparaListItem(item: any): BigparaQuote | null {
     return null
   }
 }
+
+// ───── Bigpara Geçmiş Veri (Chart API) ─────
+
+// Sembol → Bigpara ID eşleştirmesi (cache)
+let symbolIdMap: Map<string, number> | null = null
+let symbolIdMapTimestamp = 0
+const SYMBOL_ID_MAP_TTL = 3600000 // 1 saat
+
+async function getSymbolIdMap(): Promise<Map<string, number>> {
+  if (symbolIdMap && Date.now() - symbolIdMapTimestamp < SYMBOL_ID_MAP_TTL) {
+    return symbolIdMap
+  }
+
+  try {
+    const res = await fetch('https://bigpara.hurriyet.com.tr/api/v1/hisse/list', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://bigpara.hurriyet.com.tr/',
+      },
+      signal: AbortSignal.timeout(8000),
+      cache: 'no-store',
+    })
+
+    if (!res.ok) return symbolIdMap ?? new Map()
+
+    const json = await res.json()
+    const data = json?.data ?? json ?? []
+    const map = new Map<string, number>()
+
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        const kod = (item?.kod ?? '').toUpperCase()
+        const id = item?.id
+        if (kod && id) {
+          map.set(kod, id)
+          map.set(`${kod}.IS`, id)
+        }
+      }
+    }
+
+    symbolIdMap = map
+    symbolIdMapTimestamp = Date.now()
+    return map
+  } catch (error) {
+    console.error('Bigpara symbol ID map error:', error)
+    return symbolIdMap ?? new Map()
+  }
+}
+
+/**
+ * Bigpara chart API periyot eşleştirmesi:
+ * 1: Günlük (5dk intraday), 2: ~7 gün, 4: ~1 ay, 5: ~3 ay, 8: ~1 yıl, 9: ~3 yıl, 10: Tümü
+ */
+function periodToBigparaChart(period: string): number {
+  switch (period) {
+    case '1D': return 1  // Günlük intraday (5dk)
+    case '1W': return 2  // ~7 gün
+    case '1M': return 4  // ~1 ay
+    case '3M': return 5  // ~3 ay
+    case '1Y': return 8  // ~1 yıl
+    case '5Y': return 9  // ~3+ yıl
+    default: return 4
+  }
+}
+
+export interface BigparaHistoryPoint {
+  timestamp: Date
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
+
+/**
+ * Bigpara chart API'den geçmiş fiyat verisi çek.
+ * Endpoint: /api/v1/chart/sembol/{sembolId}/{period}
+ */
+export async function fetchBigparaHistory(
+  symbol: string,
+  period: string
+): Promise<BigparaHistoryPoint[]> {
+  try {
+    const cleanSymbol = symbol.replace('.IS', '').toUpperCase()
+    const idMap = await getSymbolIdMap()
+    const sembolId = idMap.get(cleanSymbol)
+
+    if (!sembolId) {
+      console.warn(`Bigpara: ${cleanSymbol} için sembol ID bulunamadı`)
+      return []
+    }
+
+    const chartPeriod = periodToBigparaChart(period)
+    const url = `https://bigpara.hurriyet.com.tr/api/v1/chart/sembol/${sembolId}/${chartPeriod}`
+
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://bigpara.hurriyet.com.tr/',
+      },
+      signal: AbortSignal.timeout(8000),
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      console.warn(`Bigpara chart HTTP ${res.status} for ${cleanSymbol}`)
+      return []
+    }
+
+    const json = await res.json()
+    const data = json?.data ?? []
+
+    if (!Array.isArray(data) || data.length === 0) return []
+
+    const history: BigparaHistoryPoint[] = []
+
+    for (const item of data) {
+      const close = parseFloat(item?.kapanis ?? '0')
+      if (!close || close <= 0) continue
+
+      history.push({
+        timestamp: new Date(item.tarih),
+        open: parseFloat(item?.acilis ?? close),
+        high: parseFloat(item?.yuksek ?? close),
+        low: parseFloat(item?.dusuk ?? close),
+        close,
+        volume: parseInt(item?.hacimlot ?? '0') || 0,
+      })
+    }
+
+    return history
+  } catch (error) {
+    console.error(`Bigpara history error for ${symbol}:`, error)
+    return []
+  }
+}
