@@ -224,19 +224,19 @@ export function PortfolioContent() {
     return (
       <button
         onClick={() => router.push(`/dashboard/trade?symbol=${stock.symbol}`)}
-        className="flex items-center justify-between w-full px-4 py-3 hover:bg-muted/50 transition-colors rounded-lg text-left"
+        className="flex items-center justify-between w-full px-4 py-3 hover:bg-muted/50 transition-colors rounded-lg text-left text-foreground"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
             <span className="text-xs font-bold text-primary">{stock.symbol?.slice(0, 2)}</span>
           </div>
           <div className="min-w-0">
-            <p className="font-mono font-semibold text-sm truncate">{stock.symbol}</p>
+            <p className="font-mono font-semibold text-sm text-foreground truncate">{stock.symbol}</p>
             <p className="text-xs text-muted-foreground truncate">{stock.name}</p>
           </div>
         </div>
         <div className="text-right flex-shrink-0 ml-2">
-          <p className="font-mono text-sm font-medium">{formatCurrency(stock.currentPrice)}</p>
+          <p className="font-mono text-sm font-medium text-foreground">{formatCurrency(stock.currentPrice)}</p>
           {showChange && (
             <p className={`text-xs font-mono ${getChangeColor(change)}`}>
               {change >= 0 ? '+' : ''}{change.toFixed(2)}%

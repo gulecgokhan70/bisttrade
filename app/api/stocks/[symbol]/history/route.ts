@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { fetchYahooHistory } from '@/lib/yahoo-finance'
-import { fetchIsyatirimHistory } from '@/lib/isyatirim-finance'
 
 export async function GET(
   request: Request,
@@ -41,17 +40,7 @@ export async function GET(
       }
     }
 
-    // 2) İş Yatırım (ikincil kaynak — EOD verisi, gün içi hariç)
-    if (period !== '1D' && stock.yahooSymbol) {
-      try {
-        const isyHistory = await fetchIsyatirimHistory(stock.yahooSymbol, period)
-        if (isyHistory.length > 0) {
-          return NextResponse.json(formatHistory('isyatirim', isyHistory))
-        }
-      } catch {}
-    }
-
-    // 3) Veritabanı (son çare)
+    // 2) Veritabanı (son çare)
     let daysBack = 30
     switch (period) {
       case '1D': daysBack = 1; break

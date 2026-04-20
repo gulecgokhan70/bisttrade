@@ -1,9 +1,9 @@
 // Multi-source finance data provider
-// Priority: Yahoo Finance → Bigpara → İş Yatırım (3 kademeli fallback)
+// Priority: CollectAPI → Yahoo Finance → Bigpara (3 kademeli fallback)
 
+import { fetchCollectApiQuote, fetchCollectApiBulkQuotes } from './collectapi-finance'
 import { fetchYahooQuote, fetchYahooBulkQuotes, type YahooQuote } from './yahoo-finance'
 import { fetchBigparaQuote, fetchBigparaBulkQuotes, type BigparaQuote } from './bigpara-finance'
-import { fetchIsyatirimQuote } from './isyatirim-finance'
 
 export interface StockQuote {
   currentPrice: number
@@ -12,18 +12,26 @@ export interface StockQuote {
   dayLow: number
   volume: number
   marketCap?: number
-  source: 'yahoo' | 'bigpara' | 'isyatirim' | 'db'
+  source: 'collectapi' | 'yahoo' | 'bigpara' | 'db'
 }
 
 /**
  * Fetch a single stock quote.
- * Priority: Yahoo Finance → Bigpara → İş Yatırım → null
+ * Priority: CollectAPI → Yahoo Finance → Bigpara → null
  */
 export async function fetchMultiSourceQuote(
   yahooSymbol: string,
   symbol: string
 ): Promise<StockQuote | null> {
-  // 1) Yahoo Finance (birincil kaynak)
+  // 1) CollectAPI (birincil kaynak)
+  try {
+    const collectQuote = await fetchCollectApiQuote(yahooSymbol)
+    if (collectQuote && collectQuote.currentPrice > 0) {
+      return { ...collectQuote, source: 'collectapi' }
+    }
+  } catch {}
+
+  // 2) Yahoo Finance (ikincil kaynak)
   try {
     const yahooQuote = await fetchYahooQuote(yahooSymbol)
     if (yahooQuote && yahooQuote.currentPrice > 0) {
@@ -31,27 +39,11 @@ export async function fetchMultiSourceQuote(
     }
   } catch {}
 
-  // 2) Bigpara (ikincil kaynak)
+  // 3) Bigpara (üçüncü kaynak)
   try {
     const bigparaQuote = await fetchBigparaQuote(symbol)
     if (bigparaQuote && bigparaQuote.currentPrice > 0) {
       return { ...bigparaQuote, source: 'bigpara' }
-    }
-  } catch {}
-
-  // 3) İş Yatırım (üçüncü kaynak — EOD verisi)
-  try {
-    const isyQuote = await fetchIsyatirimQuote(yahooSymbol)
-    if (isyQuote && isyQuote.close > 0) {
-      return {
-        currentPrice: isyQuote.close,
-        previousClose: isyQuote.close, // EOD — kapanış fiyatı
-        dayHigh: isyQuote.high,
-        dayLow: isyQuote.low,
-        volume: isyQuote.volume,
-        marketCap: isyQuote.marketCap > 0 ? isyQuote.marketCap : undefined,
-        source: 'isyatirim',
-      }
     }
   } catch {}
 
@@ -60,26 +52,38 @@ export async function fetchMultiSourceQuote(
 
 /**
  * Fetch bulk quotes - 3 kademeli fallback.
- * Yahoo → Bigpara → İş Yatırım (eksik hisseler için tek tek)
+ * CollectAPI → Yahoo → Bigpara
  */
 export async function fetchMultiSourceBulkQuotes(
   yahooSymbols: string[]
 ): Promise<Map<string, StockQuote>> {
   const results = new Map<string, StockQuote>()
 
-  // Step 1: Yahoo Finance (birincil — toplu çekim)
-  let yahooData = new Map<string, YahooQuote>()
+  // Step 1: CollectAPI (birincil — toplu çekim, tek API call)
   try {
-    yahooData = await fetchYahooBulkQuotes(yahooSymbols)
+    const collectData = await fetchCollectApiBulkQuotes()
+    for (const sym of yahooSymbols) {
+      const cQuote = collectData.get(sym) ?? collectData.get(sym.replace('.IS', ''))
+      if (cQuote && cQuote.currentPrice > 0) {
+        results.set(sym, { ...cQuote, source: 'collectapi' })
+      }
+    }
   } catch {}
 
-  for (const [sym, quote] of yahooData) {
-    if (quote && quote.currentPrice > 0) {
-      results.set(sym, { ...quote, source: 'yahoo' })
-    }
+  // Step 2: Yahoo Finance (ikincil — eksik hisseler için toplu çekim)
+  const missingAfterCollect = yahooSymbols.filter(s => !results.has(s))
+  if (missingAfterCollect.length > 0) {
+    try {
+      const yahooData = await fetchYahooBulkQuotes(missingAfterCollect)
+      for (const [sym, quote] of yahooData) {
+        if (quote && quote.currentPrice > 0) {
+          results.set(sym, { ...quote, source: 'yahoo' })
+        }
+      }
+    } catch {}
   }
 
-  // Step 2: Bigpara (ikincil — eksik hisseler için toplu çekim)
+  // Step 3: Bigpara (üçüncü — hâlâ eksik olanlar için toplu çekim)
   const missingAfterYahoo = yahooSymbols.filter(s => !results.has(s))
   if (missingAfterYahoo.length > 0) {
     try {
@@ -91,33 +95,6 @@ export async function fetchMultiSourceBulkQuotes(
         }
       }
     } catch {}
-  }
-
-  // Step 3: İş Yatırım (üçüncü — hâlâ eksik olanlar için tek tek çekim)
-  const missingAfterBigpara = yahooSymbols.filter(s => !results.has(s))
-  if (missingAfterBigpara.length > 0) {
-    // Paralel çekim — en fazla 10 tane aynı anda
-    const batchSize = 10
-    for (let i = 0; i < missingAfterBigpara.length; i += batchSize) {
-      const batch = missingAfterBigpara.slice(i, i + batchSize)
-      const promises = batch.map(async (sym) => {
-        try {
-          const isyQuote = await fetchIsyatirimQuote(sym)
-          if (isyQuote && isyQuote.close > 0) {
-            results.set(sym, {
-              currentPrice: isyQuote.close,
-              previousClose: isyQuote.close,
-              dayHigh: isyQuote.high,
-              dayLow: isyQuote.low,
-              volume: isyQuote.volume,
-              marketCap: isyQuote.marketCap > 0 ? isyQuote.marketCap : undefined,
-              source: 'isyatirim',
-            })
-          }
-        } catch {}
-      })
-      await Promise.all(promises)
-    }
   }
 
   return results

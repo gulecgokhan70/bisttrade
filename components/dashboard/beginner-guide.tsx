@@ -59,7 +59,7 @@ export function BeginnerGuide() {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">Nasıl Başlanır?</h3>
-              <p className="text-[10px] text-muted-foreground">BİST simülatörü rehberi</p>
+              <p className="text-[10px] text-muted-foreground/90">BİST simülatörü rehberi</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={handleDismiss}>
@@ -74,8 +74,8 @@ export function BeginnerGuide() {
                 <div className={`w-7 h-7 rounded-lg ${tip.color} flex items-center justify-center mb-1.5`}>
                   <Icon className="h-3.5 w-3.5" />
                 </div>
-                <p className="text-xs font-semibold text-card-foreground mb-0.5">{tip.title}</p>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">{tip.description}</p>
+                <p className="text-xs font-semibold text-foreground mb-0.5">{tip.title}</p>
+                <p className="text-[10px] text-muted-foreground/90 leading-relaxed">{tip.description}</p>
               </div>
             )
           })}
