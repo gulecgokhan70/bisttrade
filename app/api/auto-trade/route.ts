@@ -35,12 +35,46 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     const body = await request.json()
-    const { symbol, strategy, maxAmount, maxQuantity, guestId, mode } = body
+    const { symbol, strategy, maxAmount, maxQuantity, guestId, mode, isFullAuto, budgetPercent, maxOpenPositions } = body
     const userId = (session?.user as any)?.id || guestId
 
     if (!userId) {
       return NextResponse.json({ error: 'Giriş gerekli' }, { status: 401 })
     }
+
+    // Full Auto mode - no stock required
+    if (isFullAuto) {
+      if (!budgetPercent || budgetPercent < 1 || budgetPercent > 10) {
+        return NextResponse.json({ error: 'Bütçe oranı %1-%10 arasında olmalı' }, { status: 400 })
+      }
+
+      // Check existing full auto strategy
+      const existing = await prisma.autoStrategy.findFirst({
+        where: { userId, isFullAuto: true },
+      })
+      if (existing) {
+        return NextResponse.json({ error: 'Zaten bir tam otomatik strateji mevcut. Önce mevcut olanı silin.' }, { status: 409 })
+      }
+
+      const autoStrategy = await prisma.autoStrategy.create({
+        data: {
+          userId,
+          stockId: null,
+          strategy: strategy ?? 'COMBINED',
+          mode: mode ?? 'aggressive',
+          isFullAuto: true,
+          budgetPercent: budgetPercent,
+          maxAmount: maxAmount ?? 50000,
+          maxQuantity: maxQuantity ?? 100,
+          maxOpenPositions: maxOpenPositions ?? 5,
+        },
+        include: { stock: true },
+      })
+
+      return NextResponse.json(autoStrategy)
+    }
+
+    // Normal mode - stock required
     if (!symbol || !strategy) {
       return NextResponse.json({ error: 'Sembol ve strateji gerekli' }, { status: 400 })
     }
@@ -101,12 +135,12 @@ export async function DELETE(request: Request) {
   }
 }
 
-// PATCH: Toggle strategy active/inactive
+// PATCH: Toggle strategy active/inactive or update settings
 export async function PATCH(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     const body = await request.json()
-    const { id, isActive, guestId, mode } = body
+    const { id, isActive, guestId, mode, budgetPercent, maxOpenPositions } = body
     const userId = (session?.user as any)?.id || guestId
 
     if (!userId || !id) {
@@ -116,6 +150,12 @@ export async function PATCH(request: Request) {
     const updateData: any = {}
     if (typeof isActive === 'boolean') updateData.isActive = isActive
     if (mode) updateData.mode = mode
+    if (budgetPercent !== undefined && budgetPercent >= 1 && budgetPercent <= 10) {
+      updateData.budgetPercent = budgetPercent
+    }
+    if (maxOpenPositions !== undefined && maxOpenPositions >= 1 && maxOpenPositions <= 15) {
+      updateData.maxOpenPositions = maxOpenPositions
+    }
 
     const updated = await prisma.autoStrategy.update({
       where: { id, userId },

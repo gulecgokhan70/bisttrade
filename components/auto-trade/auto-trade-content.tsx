@@ -11,11 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
 import {
   Bot, Play, Square, Trash2, TrendingUp, TrendingDown,
   MinusCircle, Zap, Settings, PlusCircle, Activity,
   AlertTriangle, CheckCircle2, Clock, Search, X,
-  Flame, Shield, BarChart3, Layers,
+  Flame, Shield, BarChart3, Layers, Rocket, Target,
+  Brain, Sparkles, Gauge,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/stock-utils'
 import { toast } from 'sonner'
@@ -38,11 +40,14 @@ export function AutoTradeContent() {
   const [loading, setLoading] = useState(true)
   const [executing, setExecuting] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [createMode, setCreateMode] = useState<'manual' | 'fullAuto'>('manual')
   const [newSymbol, setNewSymbol] = useState('')
   const [newStrategy, setNewStrategy] = useState('')
   const [newMaxAmount, setNewMaxAmount] = useState('50000')
   const [newMaxQty, setNewMaxQty] = useState('100')
-  const [newMode, setNewMode] = useState<'normal' | 'aggressive'>('normal')
+  const [newMode, setNewMode] = useState<'normal' | 'aggressive' | 'ultra_aggressive'>('normal')
+  const [newBudgetPercent, setNewBudgetPercent] = useState(5)
+  const [newMaxPositions, setNewMaxPositions] = useState(5)
   const [lastExecResults, setLastExecResults] = useState<any[] | null>(null)
 
   // Stock search state
@@ -78,6 +83,7 @@ export function AutoTradeContent() {
         setNewSymbol(found.symbol)
         setStockSearch('')
         setShowCreate(true)
+        setCreateMode('manual')
       }
     }
   }, [searchParams, stocks])
@@ -118,11 +124,12 @@ export function AutoTradeContent() {
     return mins >= 595 && mins <= 1090
   }, [])
 
-  // Auto-execute: normal every 60s, aggressive every 30s
+  // Auto-execute: ultra every 20s, aggressive every 30s, normal every 60s
   useEffect(() => {
     if (!userId) return
+    const hasUltra = strategies.some((s: any) => s.isActive && s.mode === 'ultra_aggressive')
     const hasAggressive = strategies.some((s: any) => s.isActive && s.mode === 'aggressive')
-    const intervalMs = hasAggressive ? 30000 : 60000
+    const intervalMs = hasUltra ? 20000 : hasAggressive ? 30000 : 60000
     
     const interval = setInterval(async () => {
       if (!isBISTOpen()) return
@@ -150,6 +157,40 @@ export function AutoTradeContent() {
   }, [userId, isGuest, guestId, fetchStrategies, isBISTOpen, strategies])
 
   const handleCreate = async () => {
+    if (createMode === 'fullAuto') {
+      try {
+        const res = await fetch('/api/auto-trade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            isFullAuto: true,
+            strategy: 'COMBINED',
+            mode: newMode,
+            budgetPercent: newBudgetPercent,
+            maxOpenPositions: newMaxPositions,
+            maxAmount: 50000,
+            maxQuantity: 100,
+            guestId: isGuest ? guestId : undefined,
+          }),
+        })
+        if (res.ok) {
+          toast.success('Tam otomatik strateji oluşturuldu!')
+          setShowCreate(false)
+          setNewMode('aggressive')
+          setNewBudgetPercent(5)
+          setNewMaxPositions(5)
+          fetchStrategies()
+        } else {
+          const err = await res.json()
+          toast.error(err.error || 'Hata oluştu')
+        }
+      } catch {
+        toast.error('Bağlantı hatası')
+      }
+      return
+    }
+
+    // Manual mode
     if (!newSymbol || !newStrategy) {
       toast.error('Hisse ve strateji seçin')
       return
@@ -179,7 +220,7 @@ export function AutoTradeContent() {
         const err = await res.json()
         toast.error(err.error || 'Hata oluştu')
       }
-    } catch (err) {
+    } catch {
       toast.error('Bağlantı hatası')
     }
   }
@@ -195,7 +236,7 @@ export function AutoTradeContent() {
         toast.success(isActive ? 'Strateji aktif' : 'Strateji durduruldu')
         fetchStrategies()
       }
-    } catch (err) {
+    } catch {
       toast.error('Güncelleme hatası')
     }
   }
@@ -208,10 +249,11 @@ export function AutoTradeContent() {
         body: JSON.stringify({ id, mode, guestId: isGuest ? guestId : undefined }),
       })
       if (res.ok) {
-        toast.success(mode === 'aggressive' ? 'Agresif mod aktif' : 'Normal mod aktif')
+        const labels: Record<string, string> = { normal: 'Normal mod', aggressive: 'Agresif mod', ultra_aggressive: 'Ultra agresif mod' }
+        toast.success(`${labels[mode] ?? mode} aktif`)
         fetchStrategies()
       }
-    } catch (err) {
+    } catch {
       toast.error('Güncelleme hatası')
     }
   }
@@ -224,7 +266,7 @@ export function AutoTradeContent() {
         toast.success('Strateji silindi')
         fetchStrategies()
       }
-    } catch (err) {
+    } catch {
       toast.error('Silme hatası')
     }
   }
@@ -251,7 +293,7 @@ export function AutoTradeContent() {
         }
         fetchStrategies()
       }
-    } catch (err) {
+    } catch {
       toast.error('İşlem hatası')
     } finally {
       setExecuting(false)
@@ -270,6 +312,24 @@ export function AutoTradeContent() {
     return 'BEKLE'
   }
 
+  const getModeIcon = (mode: string) => {
+    if (mode === 'ultra_aggressive') return <Rocket className="h-4 w-4 text-red-500" />
+    if (mode === 'aggressive') return <Flame className="h-4 w-4 text-orange-500" />
+    return <Shield className="h-4 w-4 text-primary" />
+  }
+
+  const getModeLabel = (mode: string) => {
+    if (mode === 'ultra_aggressive') return 'Ultra Agresif'
+    if (mode === 'aggressive') return 'Agresif'
+    return 'Normal'
+  }
+
+  const getModeColor = (mode: string) => {
+    if (mode === 'ultra_aggressive') return 'text-red-500 border-red-500/30 bg-red-500/15'
+    if (mode === 'aggressive') return 'text-orange-500 border-orange-500/30 bg-orange-500/15'
+    return 'text-emerald-500 border-emerald-500/30 bg-emerald-500/15'
+  }
+
   // Guest restriction
   if (isGuest) {
     return (
@@ -283,24 +343,21 @@ export function AutoTradeContent() {
             Otomatik alım satım stratejileri oluşturmak ve yönetmek için kayıt olmanız gerekmektedir.
           </p>
         </div>
-        <Button
-          onClick={() => router.push('/auth/register')}
-          className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-8 py-3 text-lg"
-        >
+        <Button onClick={() => router.push('/signup')} className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-8 py-3 text-lg">
           Kayıt Ol
         </Button>
         <p className="text-sm text-muted-foreground">
           Zaten hesabınız var mı?{' '}
-          <button onClick={() => router.push('/auth/login')} className="text-purple-500 hover:underline">
-            Giriş Yap
-          </button>
+          <button onClick={() => router.push('/login')} className="text-purple-500 hover:underline">Giriş Yap</button>
         </p>
       </div>
     )
   }
 
   const activeCount = strategies.filter((s: any) => s.isActive).length
-  const aggressiveCount = strategies.filter((s: any) => s.isActive && s.mode === 'aggressive').length
+  const aggressiveCount = strategies.filter((s: any) => s.isActive && (s.mode === 'aggressive' || s.mode === 'ultra_aggressive')).length
+  const fullAutoCount = strategies.filter((s: any) => s.isFullAuto).length
+  const hasFullAuto = fullAutoCount > 0
 
   return (
     <div className="space-y-6">
@@ -343,7 +400,7 @@ export function AutoTradeContent() {
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-orange-500">{aggressiveCount}</p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Flame className="h-3 w-3" /> Agresif</p>
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Flame className="h-3 w-3" /> Agresif+</p>
             </CardContent>
           </Card>
           <Card>
@@ -369,96 +426,195 @@ export function AutoTradeContent() {
           <Card className="border-primary/30">
             <CardHeader>
               <CardTitle className="text-base">Yeni Strateji Oluştur</CardTitle>
+              {/* Mode Toggle */}
+              <div className="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setCreateMode('fullAuto')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all text-sm font-medium ${
+                    createMode === 'fullAuto'
+                      ? 'border-purple-500 bg-purple-500/10 text-purple-500'
+                      : 'border-muted hover:border-muted-foreground/30 text-muted-foreground'
+                  }`}
+                >
+                  <Brain className="h-4 w-4" /> Tam Otomatik
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreateMode('manual')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 transition-all text-sm font-medium ${
+                    createMode === 'manual'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-muted hover:border-muted-foreground/30 text-muted-foreground'
+                  }`}
+                >
+                  <Target className="h-4 w-4" /> Manuel Seçim
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Hisse</Label>
-                  <div ref={stockSearchRef} className="relative">
-                    {newSymbol && !showStockDropdown ? (
-                      <div
-                        className="flex items-center justify-between h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
-                        onClick={() => { setShowStockDropdown(true); setStockSearch('') }}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="font-semibold text-primary">{newSymbol}</span>
-                          <span className="text-muted-foreground text-xs truncate">{selectedStockInfo?.name}</span>
-                        </span>
-                        <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setNewSymbol(''); setStockSearch('') }} />
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          value={stockSearch}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setStockSearch(e.target.value); setShowStockDropdown(true) }}
-                          onFocus={() => setShowStockDropdown(true)}
-                          placeholder="Hisse ara (sembol veya isim)..."
-                          className="pl-9"
-                          autoComplete="off"
-                        />
-                      </div>
-                    )}
 
-                    {showStockDropdown && (
-                      <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-lg border bg-popover shadow-lg">
-                        {filteredStocks.length === 0 ? (
-                          <div className="p-3 text-sm text-muted-foreground text-center">Sonuç bulunamadı</div>
+              {/* FULL AUTO MODE */}
+              {createMode === 'fullAuto' && (
+                <>
+                  {hasFullAuto && (
+                    <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-sm flex gap-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-muted-foreground">Zaten bir tam otomatik strateji mevcut. Yeni oluşturmak için mevcut olanı silin.</p>
+                    </div>
+                  )}
+
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 via-indigo-500/5 to-transparent border border-purple-500/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Brain className="h-5 w-5 text-purple-500" />
+                      <h3 className="font-semibold">Tam Otomatik Robot</h3>
+                      <Sparkles className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Robot, sermayenizin belirli bir yüzdesini ayırarak kendi hisse seçer, teknik analiz yapar ve
+                      otomatik alım-satım gerçekleştirir. Siz sadece bütçe oranını ve risk seviyesini belirleyin.
+                    </p>
+                  </div>
+
+                  {/* Budget Slider */}
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                      <Gauge className="h-4 w-4 text-primary" />
+                      Bütçe Oranı: <span className="text-primary font-bold">%{newBudgetPercent}</span>
+                    </Label>
+                    <Slider
+                      value={[newBudgetPercent]}
+                      onValueChange={(val: number[]) => setNewBudgetPercent(val[0])}
+                      min={1}
+                      max={10}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>%1 (Güvenli)</span>
+                      <span>%5 (Dengeli)</span>
+                      <span>%10 (Yüksek)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Toplam portföy değerinizin %{newBudgetPercent}&apos;i otomatik işlemlere ayrılır.</p>
+                  </div>
+
+                  {/* Max Open Positions */}
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-primary" />
+                      Maks. Açık Pozisyon: <span className="text-primary font-bold">{newMaxPositions}</span>
+                    </Label>
+                    <Slider
+                      value={[newMaxPositions]}
+                      onValueChange={(val: number[]) => setNewMaxPositions(val[0])}
+                      min={1}
+                      max={15}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>1 (Konsantre)</span>
+                      <span>5 (Dengeli)</span>
+                      <span>15 (Çeşitli)</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* MANUAL MODE */}
+              {createMode === 'manual' && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Hisse</Label>
+                      <div ref={stockSearchRef} className="relative">
+                        {newSymbol && !showStockDropdown ? (
+                          <div
+                            className="flex items-center justify-between h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => { setShowStockDropdown(true); setStockSearch('') }}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span className="font-semibold text-primary">{newSymbol}</span>
+                              <span className="text-muted-foreground text-xs truncate">{selectedStockInfo?.name}</span>
+                            </span>
+                            <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setNewSymbol(''); setStockSearch('') }} />
+                          </div>
                         ) : (
-                          filteredStocks.map((s: any) => (
-                            <button
-                              key={s.symbol}
-                              type="button"
-                              className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 transition-colors ${newSymbol === s.symbol ? 'bg-primary/10' : ''}`}
-                              onClick={() => {
-                                setNewSymbol(s.symbol)
-                                setStockSearch('')
-                                setShowStockDropdown(false)
-                              }}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className="font-semibold w-14 text-left">{s.symbol}</span>
-                                <span className="text-muted-foreground text-xs truncate">{s.name}</span>
-                              </span>
-                              {s.currentPrice > 0 && (
-                                <span className="text-xs text-muted-foreground font-mono">{formatCurrency(s.currentPrice)}</span>
-                              )}
-                            </button>
-                          ))
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              value={stockSearch}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setStockSearch(e.target.value); setShowStockDropdown(true) }}
+                              onFocus={() => setShowStockDropdown(true)}
+                              placeholder="Hisse ara (sembol veya isim)..."
+                              className="pl-9"
+                              autoComplete="off"
+                            />
+                          </div>
+                        )}
+
+                        {showStockDropdown && (
+                          <div className="absolute z-50 w-full mt-1 max-h-52 overflow-y-auto rounded-lg border bg-popover shadow-lg">
+                            {filteredStocks.length === 0 ? (
+                              <div className="p-3 text-sm text-muted-foreground text-center">Sonuç bulunamadı</div>
+                            ) : (
+                              filteredStocks.map((s: any) => (
+                                <button
+                                  key={s.symbol}
+                                  type="button"
+                                  className={`w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 transition-colors ${newSymbol === s.symbol ? 'bg-primary/10' : ''}`}
+                                  onClick={() => { setNewSymbol(s.symbol); setStockSearch(''); setShowStockDropdown(false) }}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <span className="font-semibold w-14 text-left">{s.symbol}</span>
+                                    <span className="text-muted-foreground text-xs truncate">{s.name}</span>
+                                  </span>
+                                  {s.currentPrice > 0 && (
+                                    <span className="text-xs text-muted-foreground font-mono">{formatCurrency(s.currentPrice)}</span>
+                                  )}
+                                </button>
+                              ))
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Strateji</Label>
+                      <Select value={newStrategy} onValueChange={setNewStrategy}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Strateji seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STRATEGIES.map(s => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Maks. Tutar (₺)</Label>
+                      <Input type="number" value={newMaxAmount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMaxAmount(e.target.value)} placeholder="50000" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Maks. Adet</Label>
+                      <Input type="number" value={newMaxQty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMaxQty(e.target.value)} placeholder="100" />
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Strateji</Label>
-                  <Select value={newStrategy} onValueChange={setNewStrategy}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Strateji seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STRATEGIES.map(s => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Maks. Tutar (₺)</Label>
-                  <Input type="number" value={newMaxAmount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMaxAmount(e.target.value)} placeholder="50000" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Maks. Adet</Label>
-                  <Input type="number" value={newMaxQty} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewMaxQty(e.target.value)} placeholder="100" />
-                </div>
-              </div>
 
-              {/* Mode Selection */}
+                  {newStrategy && (
+                    <div className="p-3 rounded-lg bg-muted/50 text-sm">
+                      <p className="font-medium">{STRATEGIES.find(s => s.id === newStrategy)?.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{STRATEGIES.find(s => s.id === newStrategy)?.desc}</p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Mode Selection - Shared */}
               <div className="space-y-3">
                 <Label>İşlem Modu</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <button
                     type="button"
                     onClick={() => setNewMode('normal')}
@@ -470,11 +626,9 @@ export function AutoTradeContent() {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Shield className={`h-5 w-5 ${newMode === 'normal' ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <span className="font-semibold">Normal Mod</span>
+                      <span className="font-semibold text-sm">Normal</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Güvenli strateji · %60+ güven eşiği · MTF uyum kontrolü · Her 60sn kontrol
-                    </p>
+                    <p className="text-[10px] text-muted-foreground">%60+ güven · MTF uyum · 60sn</p>
                   </button>
                   <button
                     type="button"
@@ -487,19 +641,39 @@ export function AutoTradeContent() {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Flame className={`h-5 w-5 ${newMode === 'aggressive' ? 'text-orange-500' : 'text-muted-foreground'}`} />
-                      <span className="font-semibold">Agresif Mod</span>
+                      <span className="font-semibold text-sm">Agresif</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Hızlı al/sat · %30 güven eşiği · 1.5x limit · Her 30sn kontrol · Yüksek risk
-                    </p>
+                    <p className="text-[10px] text-muted-foreground">%30 güven · 1.5x limit · 30sn</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewMode('ultra_aggressive')}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      newMode === 'ultra_aggressive'
+                        ? 'border-red-500 bg-red-500/5'
+                        : 'border-muted hover:border-muted-foreground/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Rocket className={`h-5 w-5 ${newMode === 'ultra_aggressive' ? 'text-red-500' : 'text-muted-foreground'}`} />
+                      <span className="font-semibold text-sm">Ultra Agresif</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">%10 güven · 2x limit · 20sn · Yüksek risk</p>
                   </button>
                 </div>
               </div>
 
-              {newStrategy && (
-                <div className="p-3 rounded-lg bg-muted/50 text-sm">
-                  <p className="font-medium">{STRATEGIES.find(s => s.id === newStrategy)?.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{STRATEGIES.find(s => s.id === newStrategy)?.desc}</p>
+              {newMode === 'ultra_aggressive' && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm flex gap-2">
+                  <Rocket className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-red-600 dark:text-red-400">Ultra Agresif Mod — Çok Yüksek Risk!</p>
+                    <p className="text-xs text-muted-foreground">
+                      Güven eşiği %10&apos;a düşer, alım/satım limitleri 2x artar, kontrol her 20sn yapılır.
+                      Zaman dilimi çelişkileri görmezden gelinir. Hızlı ve sürekli işlem yapar.
+                      Büyük kazanç veya büyük kayıp potansiyeli taşır!
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -509,8 +683,7 @@ export function AutoTradeContent() {
                   <div>
                     <p className="font-medium text-orange-600 dark:text-orange-400">Agresif Mod Uyarısı</p>
                     <p className="text-xs text-muted-foreground">
-                      Agresif modda: güven eşiği %30&apos;a düşer, alım/satım limitleri 1.5x artar, kontrol sıklığı 30sn&apos;ye iner.
-                      Çoklu zaman dilimi çelişkisi olsa bile işlem yapabilir. Yüksek risk içerir!
+                      Güven eşiği %30&apos;a düşer, limitleri 1.5x artar, kontrol 30sn&apos;ye iner. Yüksek risk içerir!
                     </p>
                   </div>
                 </div>
@@ -520,13 +693,14 @@ export function AutoTradeContent() {
                 <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-yellow-600 dark:text-yellow-400">Uyarı</p>
-                  <p className="text-xs text-muted-foreground">Otomatik alım satım risk içerir. Çoklu zaman dilimi sinyalleri + teknik göstergelerle işlem yapar. Sanal para ile çalışır.</p>
+                  <p className="text-xs text-muted-foreground">Otomatik alım satım risk içerir. Sanal para ile çalışır — gerçek para kaybı yoktur.</p>
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleCreate} className="gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" /> Oluştur
+                <Button onClick={handleCreate} disabled={createMode === 'fullAuto' && hasFullAuto} className="gap-1.5">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {createMode === 'fullAuto' ? 'Tam Otoyu Başlat' : 'Oluştur'}
                 </Button>
                 <Button variant="outline" onClick={() => setShowCreate(false)}>İptal</Button>
               </div>
@@ -546,7 +720,7 @@ export function AutoTradeContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {lastExecResults.slice(0, 5).map((r: any, i: number) => (
+                {lastExecResults.slice(0, 8).map((r: any, i: number) => (
                   <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2 rounded-lg bg-muted/30 text-xs">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold w-12">{r.symbol}</span>
@@ -557,24 +731,24 @@ export function AutoTradeContent() {
                       }`}>
                         {r.signal === 'BUY' ? 'AL' : r.signal === 'SELL' ? 'SAT' : 'BEKLE'}
                       </Badge>
-                      {r.mode === 'aggressive' && <Flame className="h-3 w-3 text-orange-500" />}
+                      {r.fullAuto && <Brain className="h-3 w-3 text-purple-500" />}
+                      {r.mode === 'ultra_aggressive' && <Rocket className="h-3 w-3 text-red-500" />}
+                      {r.mode === 'aggressive' && !r.fullAuto && <Flame className="h-3 w-3 text-orange-500" />}
                       {r.executed && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
                     </div>
                     <div className="text-muted-foreground truncate max-w-xs">
-                      {r.confidence && <span className="mr-2">%{r.confidence}</span>}
+                      {r.confidence && <span className="mr-2">%{Math.round(r.confidence)}</span>}
                       {r.reason?.split(' · ').slice(0, 2).join(' · ')}
                     </div>
                     {r.executed && (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span className={`font-medium ${r.tradeType === 'BUY' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                         {r.tradeType === 'BUY' ? 'ALINDI' : 'SATILDI'} {r.quantity} ad. @ {formatCurrency(r.price)}
                       </span>
                     )}
                   </div>
                 ))}
               </div>
-              <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => setLastExecResults(null)}>
-                Kapat
-              </Button>
+              <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => setLastExecResults(null)}>Kapat</Button>
             </CardContent>
           </Card>
         </FadeIn>
@@ -595,55 +769,78 @@ export function AutoTradeContent() {
         ) : (
           <div className="grid gap-3">
             {strategies.map((strat: any) => {
-              const stratInfo = STRATEGIES.find(s => s.id === strat.strategy)
-              const Icon = stratInfo?.icon ?? Bot
-              const isAggressive = strat.mode === 'aggressive'
+              const isFullAuto = strat.isFullAuto
+              const stratInfo = isFullAuto ? null : STRATEGIES.find(s => s.id === strat.strategy)
+              const Icon = isFullAuto ? Brain : (stratInfo?.icon ?? Bot)
+              const mode = strat.mode ?? 'normal'
+              const isUltra = mode === 'ultra_aggressive'
+              const isAgg = mode === 'aggressive'
+
               return (
                 <Card key={strat.id} className={`transition-all ${
                   !strat.isActive ? 'opacity-60' :
-                  isAggressive ? 'border-orange-500/30' : 'border-primary/30'
+                  isFullAuto ? 'border-purple-500/30 shadow-purple-500/5 shadow-lg' :
+                  isUltra ? 'border-red-500/30' :
+                  isAgg ? 'border-orange-500/30' : 'border-primary/30'
                 }`}>
                   <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${
                           !strat.isActive ? 'bg-muted' :
-                          isAggressive ? 'bg-orange-500/10' : 'bg-primary/10'
+                          isFullAuto ? 'bg-purple-500/10' :
+                          isUltra ? 'bg-red-500/10' :
+                          isAgg ? 'bg-orange-500/10' : 'bg-primary/10'
                         }`}>
                           <Icon className={`h-5 w-5 ${
                             !strat.isActive ? 'text-muted-foreground' :
-                            isAggressive ? 'text-orange-500' : 'text-primary'
+                            isFullAuto ? 'text-purple-500' :
+                            isUltra ? 'text-red-500' :
+                            isAgg ? 'text-orange-500' : 'text-primary'
                           }`} />
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              className="font-semibold hover:text-primary hover:underline underline-offset-2 transition-colors"
-                              onClick={() => router.push(`/dashboard/trade?symbol=${strat.stock?.symbol}`)}
-                            >
-                              {strat.stock?.symbol}
-                            </button>
-                            <Badge variant="outline" className="text-xs">{stratInfo?.name ?? strat.strategy}</Badge>
+                            {isFullAuto ? (
+                              <span className="font-semibold text-purple-500">Tam Otomatik Robot</span>
+                            ) : (
+                              <button
+                                className="font-semibold hover:text-primary hover:underline underline-offset-2 transition-colors"
+                                onClick={() => router.push(`/dashboard/trade?symbol=${strat.stock?.symbol}`)}
+                              >
+                                {strat.stock?.symbol}
+                              </button>
+                            )}
+                            {!isFullAuto && <Badge variant="outline" className="text-xs">{stratInfo?.name ?? strat.strategy}</Badge>}
                             {strat.isActive && (
-                              isAggressive ? (
-                                <Badge className="text-xs bg-orange-500/15 text-orange-500 border-orange-500/30 gap-1">
-                                  <Flame className="h-3 w-3" /> Agresif
-                                </Badge>
-                              ) : (
-                                <Badge className="text-xs bg-emerald-500/15 text-emerald-500 border-emerald-500/30">
-                                  Aktif
-                                </Badge>
-                              )
+                              <Badge className={`text-xs gap-1 ${getModeColor(mode)}`}>
+                                {getModeIcon(mode)} {getModeLabel(mode)}
+                              </Badge>
+                            )}
+                            {isFullAuto && strat.isActive && (
+                              <Badge className="text-xs bg-purple-500/15 text-purple-500 border-purple-500/30 gap-1">
+                                <Sparkles className="h-3 w-3" /> Otonom
+                              </Badge>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            <button
-                              className="hover:text-primary hover:underline underline-offset-2 transition-colors"
-                              onClick={() => router.push(`/dashboard/trade?symbol=${strat.stock?.symbol}`)}
-                            >
-                              {strat.stock?.name}
-                            </button>
-                            {' '}· Maks: {formatCurrency(strat.maxAmount)}{isAggressive ? ' (×1.5)' : ''} / {strat.maxQuantity} adet
+                            {isFullAuto ? (
+                              <>
+                                Bütçe: %{strat.budgetPercent ?? 5} · Maks {strat.maxOpenPositions ?? 5} pozisyon
+                                {isUltra && ' · 20sn aralık'}
+                                {isAgg && ' · 30sn aralık'}
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  className="hover:text-primary hover:underline underline-offset-2 transition-colors"
+                                  onClick={() => router.push(`/dashboard/trade?symbol=${strat.stock?.symbol}`)}
+                                >
+                                  {strat.stock?.name}
+                                </button>
+                                {' '}· Maks: {formatCurrency(strat.maxAmount)}{isUltra ? ' (×2)' : isAgg ? ' (×1.5)' : ''} / {strat.maxQuantity} adet
+                              </>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -665,15 +862,22 @@ export function AutoTradeContent() {
 
                         {/* Controls */}
                         <div className="flex items-center gap-2">
-                          {/* Mode toggle */}
+                          {/* Mode cycle: normal -> aggressive -> ultra_aggressive -> normal */}
                           <Button
                             variant="ghost"
                             size="icon"
-                            className={`h-8 w-8 ${isAggressive ? 'text-orange-500 hover:text-orange-600' : 'text-muted-foreground hover:text-primary'}`}
-                            onClick={() => handleModeChange(strat.id, isAggressive ? 'normal' : 'aggressive')}
-                            title={isAggressive ? 'Normal moda geç' : 'Agresif moda geç'}
+                            className={`h-8 w-8 ${
+                              isUltra ? 'text-red-500 hover:text-red-600' :
+                              isAgg ? 'text-orange-500 hover:text-orange-600' :
+                              'text-muted-foreground hover:text-primary'
+                            }`}
+                            onClick={() => {
+                              const next = mode === 'normal' ? 'aggressive' : mode === 'aggressive' ? 'ultra_aggressive' : 'normal'
+                              handleModeChange(strat.id, next)
+                            }}
+                            title={`Mod değiştir (şu an: ${getModeLabel(mode)})`}
                           >
-                            {isAggressive ? <Flame className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+                            {isUltra ? <Rocket className="h-4 w-4" /> : isAgg ? <Flame className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
                           </Button>
                           <Switch
                             checked={strat.isActive}
@@ -690,7 +894,8 @@ export function AutoTradeContent() {
                       <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         Son kontrol: {new Date(strat.lastChecked).toLocaleString('tr-TR')}
-                        {isAggressive && ' · 30sn aralık'}
+                        {isUltra && ' · 20sn aralık'}
+                        {isAgg && !isUltra && ' · 30sn aralık'}
                       </p>
                     )}
                   </CardContent>
@@ -708,34 +913,41 @@ export function AutoTradeContent() {
             <CardTitle className="text-base">Nasıl Çalışır?</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">1</div>
-                  <span className="font-semibold">Strateji Seçin</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+              <div className="space-y-4">
+                <h4 className="font-semibold flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Manuel Seçim</h4>
+                <div className="space-y-2 text-xs text-muted-foreground">
+                  <p>1. Hisse ve teknik strateji seçersiniz</p>
+                  <p>2. Çoklu zaman dilimi analiz edilir (G/H/A)</p>
+                  <p>3. Güven eşiğini aşan sinyallerde otomatik işlem yapılır</p>
                 </div>
-                <p className="text-xs text-muted-foreground pl-8">Hisse, teknik strateji ve işlem modunu belirleyin</p>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">2</div>
-                  <span className="font-semibold">Çoklu Sinyal</span>
+              <div className="space-y-4">
+                <h4 className="font-semibold flex items-center gap-2"><Brain className="h-4 w-4 text-purple-500" /> Tam Otomatik</h4>
+                <div className="space-y-2 text-xs text-muted-foreground">
+                  <p>1. Bütçe oranı ve risk seviyesi belirlersiniz</p>
+                  <p>2. Robot tüm hisseleri tarar ve en iyi fırsatları seçer</p>
+                  <p>3. RSI, MACD, Bollinger, hacim analizi ile otomatik al/sat yapar</p>
+                  <p>4. Zarar eden pozisyonları da otomatik kapatır</p>
                 </div>
-                <p className="text-xs text-muted-foreground pl-8">Günlük + Haftalık + Aylık zaman dilimleri analiz edilir</p>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">3</div>
-                  <span className="font-semibold">Uyum Kontrolü</span>
-                </div>
-                <p className="text-xs text-muted-foreground pl-8">Zaman dilimleri aynı yönü gösterdiğinde güven artar</p>
+            </div>
+
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-center">
+                <Shield className="h-5 w-5 text-primary mx-auto mb-1" />
+                <p className="text-xs font-semibold">Normal</p>
+                <p className="text-[10px] text-muted-foreground">%60+ güven · 60sn</p>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">4</div>
-                  <span className="font-semibold">Otomatik İşlem</span>
-                </div>
-                <p className="text-xs text-muted-foreground pl-8">Normal: %60+ güven · Agresif: %30+ güven ile işlem</p>
+              <div className="p-3 rounded-lg bg-orange-500/5 border border-orange-500/20 text-center">
+                <Flame className="h-5 w-5 text-orange-500 mx-auto mb-1" />
+                <p className="text-xs font-semibold">Agresif</p>
+                <p className="text-[10px] text-muted-foreground">%30 güven · 30sn · 1.5x</p>
+              </div>
+              <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 text-center">
+                <Rocket className="h-5 w-5 text-red-500 mx-auto mb-1" />
+                <p className="text-xs font-semibold">Ultra Agresif</p>
+                <p className="text-[10px] text-muted-foreground">%10 güven · 20sn · 2x</p>
               </div>
             </div>
           </CardContent>
