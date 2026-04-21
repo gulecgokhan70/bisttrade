@@ -39,6 +39,7 @@ export function DashboardContent() {
   const [marketOpen, setMarketOpen] = useState(true)
   const [allScannerData, setAllScannerData] = useState<any[]>([])
   const [showAllScanner, setShowAllScanner] = useState(false)
+  const [mobileTab, setMobileTab] = useState<'movers' | 'scanner' | 'whale'>('movers')
 
   // Locked ranking: symbol order fixed every 30 min, prices update live
   const [lockedGainerSymbols, setLockedGainerSymbols] = useState<string[]>([])
@@ -272,360 +273,383 @@ export function DashboardContent() {
         </Card>
       </FadeIn>
 
-      {/* Top Gainers & Losers */}
+      {/* === Desktop: 3 kolon yan yana | Mobil: Sekmeli (tab) === */}
       <FadeIn delay={0.2}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold">Piyasa Hareketleri</h2>
-          <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => router.push('/dashboard/market')}>
-            Tüm Piyasa <ArrowRight className="h-3 w-3" />
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* En Çok Yükselen */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/10">
-                  <TrendingUp className="h-4 w-4 text-emerald-500" />
-                </div>
-                En Çok Yükselen
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 pb-2">
-              {topGainers.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">Yükselen hisse yok</p>
-              ) : (
-                <div className="px-2">
-                  {topGainers.map((stock: any, idx: number) => (
-                    <button
-                      key={stock?.id}
-                      className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-muted/50 transition-colors rounded-lg text-left group"
-                      onClick={() => router.push(`/dashboard/trade?symbol=${stock?.symbol}`)}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-[10px] font-bold text-muted-foreground/60 w-4 shrink-0">{idx + 1}</span>
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-bold text-emerald-500">{stock.symbol?.slice(0, 2)}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-mono font-semibold text-sm truncate group-hover:text-primary transition-colors">{stock?.symbol}</p>
-                          <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{stock?.name}</p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0 ml-2">
-                        <p className="font-mono text-sm font-medium">{formatCurrency(stock?.currentPrice)}</p>
-                        <div className="flex items-center justify-end gap-0.5">
-                          <ArrowUpRight className="h-3 w-3 text-emerald-500" />
-                          <span className="text-xs font-mono font-bold text-emerald-500">
-                            +{stock._changePct.toFixed(2)}%
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* En Çok Düşen */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/10">
-                  <TrendingDown className="h-4 w-4 text-red-500" />
-                </div>
-                En Çok Düşen
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 pb-2">
-              {topLosers.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">Düşen hisse yok</p>
-              ) : (
-                <div className="px-2">
-                  {topLosers.map((stock: any, idx: number) => (
-                    <button
-                      key={stock?.id}
-                      className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-muted/50 transition-colors rounded-lg text-left group"
-                      onClick={() => router.push(`/dashboard/trade?symbol=${stock?.symbol}`)}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-[10px] font-bold text-muted-foreground/60 w-4 shrink-0">{idx + 1}</span>
-                        <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-bold text-red-300">{stock.symbol?.slice(0, 2)}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-mono font-semibold text-sm truncate group-hover:text-primary transition-colors">{stock?.symbol}</p>
-                          <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{stock?.name}</p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0 ml-2">
-                        <p className="font-mono text-sm font-medium">{formatCurrency(stock?.currentPrice)}</p>
-                        <div className="flex items-center justify-end gap-0.5">
-                          <ArrowDownRight className="h-3 w-3 text-red-400" />
-                          <span className="text-xs font-mono font-bold text-red-400">
-                            {stock._changePct.toFixed(2)}%
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </FadeIn>
-
-      {/* Trade Scanner - Fırsat Tarayıcı (Premium Only) */}
-      <PremiumGate feature="Fırsat Tarayıcı">
-      {isGuest ? (
-        <FadeIn delay={0.3}>
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Radar className="w-8 h-8 text-primary" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold">Fırsat Tarayıcı</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  Akıllı hisse tarama ve sinyal analizi için kayıt olmanız gerekmektedir.
-                </p>
-              </div>
-              <Button
-                onClick={() => router.push('/signup')}
-                className="bg-gradient-to-r from-primary to-emerald-500 hover:from-primary/90 hover:to-emerald-600 text-white px-6"
-              >
-                Kayıt Ol
-              </Button>
-            </CardContent>
-          </Card>
-        </FadeIn>
-      ) : (
-      <FadeIn delay={0.3}>
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                  <Radar className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-base font-semibold">Fırsat Tarayıcı</CardTitle>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    RSI, MA, hacim ve momentum analizi ile akıllı tarama
-                    {scannerData.length > 0 && <span className="text-primary font-medium ml-1">({scannerData.length} fırsat)</span>}
-                  </p>
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => router.push('/dashboard/market')}>
-                Tüm Piyasa <ArrowRight className="h-3 w-3" />
-              </Button>
-            </div>
-
-            {/* Category Filters */}
-            <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+        {/* Mobil Sekmeler */}
+        <div className="lg:hidden">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold">Piyasa Hareketleri</h2>
+            <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => router.push('/dashboard/market')}>
+              Tüm Piyasa <ArrowRight className="h-3 w-3" />
+            </Button>
+          </div>
+          <div className="flex rounded-xl bg-muted/50 p-1 mb-4">
+            {[
+              { key: 'movers', label: 'Y\u00fckselen/D\u00fc\u015fen', icon: <BarChart3 className="h-3.5 w-3.5" /> },
+              { key: 'scanner', label: 'F\u0131rsat', icon: <Radar className="h-3.5 w-3.5" /> },
+              { key: 'whale', label: 'Balina', icon: <Zap className="h-3.5 w-3.5" /> },
+            ].map((tab) => (
               <button
-                onClick={() => setSelectedCategory('ALL')}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border ${
-                  selectedCategory === 'ALL'
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:border-border'
+                key={tab.key}
+                onClick={() => setMobileTab(tab.key as any)}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  mobileTab === tab.key
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Filter className="h-3 w-3" /> Tümü
+                {tab.icon}
+                {tab.label}
               </button>
-              {scannerCategories.map((cat: string) => {
-                const isActive = activeCategories.includes(cat)
-                const isSelected = selectedCategory === cat
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(isSelected ? 'ALL' : cat)}
-                    disabled={!isActive && !isSelected}
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border ${
-                      isSelected
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : isActive
-                        ? 'bg-muted/50 text-muted-foreground border-border/50 hover:bg-muted hover:border-border'
-                        : 'bg-muted/20 text-muted-foreground/40 border-transparent cursor-not-allowed'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                )
-              })}
+            ))}
+          </div>
+
+          {/* Mobil: Yükselen/Düşen */}
+          {mobileTab === 'movers' && (
+            <div className="grid grid-cols-2 gap-3">
+              <Card>
+                <CardHeader className="pb-1 px-3 pt-3">
+                  <CardTitle className="text-xs flex items-center gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                    Y\u00fckselen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 pb-2">
+                  {topGainers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Veri yok</p>
+                  ) : (
+                    <div className="px-1.5">
+                      {topGainers.map((stock: any, idx: number) => (
+                        <button
+                          key={stock?.id}
+                          className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-muted/50 transition-colors rounded-lg text-left"
+                          onClick={() => router.push(`/dashboard/trade?symbol=${stock?.symbol}`)}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[9px] font-bold text-muted-foreground/60 w-3 shrink-0">{idx + 1}</span>
+                            <div className="min-w-0">
+                              <p className="font-mono font-semibold text-xs truncate">{stock?.symbol}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-emerald-500 shrink-0">+{stock._changePct.toFixed(1)}%</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-1 px-3 pt-3">
+                  <CardTitle className="text-xs flex items-center gap-1.5">
+                    <TrendingDown className="h-3.5 w-3.5 text-red-500" />
+                    D\u00fc\u015fen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 pb-2">
+                  {topLosers.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Veri yok</p>
+                  ) : (
+                    <div className="px-1.5">
+                      {topLosers.map((stock: any, idx: number) => (
+                        <button
+                          key={stock?.id}
+                          className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-muted/50 transition-colors rounded-lg text-left"
+                          onClick={() => router.push(`/dashboard/trade?symbol=${stock?.symbol}`)}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-[9px] font-bold text-muted-foreground/60 w-3 shrink-0">{idx + 1}</span>
+                            <div className="min-w-0">
+                              <p className="font-mono font-semibold text-xs truncate">{stock?.symbol}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono font-bold text-red-400 shrink-0">{stock._changePct.toFixed(1)}%</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
+          )}
 
-            {/* Market closed banner */}
-            {!marketOpen && (
-              <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <span className="text-amber-500 text-sm">⏰</span>
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  Borsa kapalı — son işlem günü verileri gösteriliyor
-                </p>
-              </div>
-            )}
-          </CardHeader>
-          <CardContent>
-            {scannerData.length === 0 ? (
-              <div className="text-center py-8">
-                <Radar className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  {selectedCategory !== 'ALL'
-                    ? `"${selectedCategory}" kategorisinde fırsat bulunamadı`
-                    : 'Şu anda belirgin bir trade fırsatı tespit edilemedi'}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Piyasa açıkken fırsatlar otomatik taranır
-                </p>
-                {selectedCategory !== 'ALL' && (
-                  <Button variant="outline" size="sm" className="mt-3 text-xs" onClick={() => setSelectedCategory('ALL')}>
-                    Tüm Fırsatları Göster
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-               {scannerData.slice(0, showAllScanner ? 50 : 2).map((opp: any) => {
-                  const isUp = (opp?.changePercent ?? 0) >= 0
-                  const categoryColor = getCategoryColor(opp?.category)
+          {/* Mobil: Fırsat Tarayıcı */}
+          {mobileTab === 'scanner' && (
+            <PremiumGate feature="F\u0131rsat Taray\u0131c\u0131">
+              {isGuest ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-8 text-center space-y-3">
+                    <Radar className="w-8 h-8 text-primary" />
+                    <p className="text-sm text-muted-foreground">Kay\u0131t olman\u0131z gerekmektedir.</p>
+                    <Button size="sm" onClick={() => router.push('/signup')} className="bg-gradient-to-r from-primary to-emerald-500 text-white">Kay\u0131t Ol</Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader className="pb-2 px-3 pt-3">
+                    <div className="flex items-center gap-2">
+                      <Radar className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-sm">F\u0131rsat Taray\u0131c\u0131</CardTitle>
+                      {scannerData.length > 0 && <Badge variant="secondary" className="text-[10px] px-1.5">{scannerData.length}</Badge>}
+                    </div>
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                      <button onClick={() => setSelectedCategory('ALL')} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all border ${selectedCategory === 'ALL' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-muted-foreground border-border/50'}`}>
+                        <Filter className="h-2.5 w-2.5" /> T\u00fcm\u00fc
+                      </button>
+                      {scannerCategories.map((cat: string) => {
+                        const isActive = activeCategories.includes(cat)
+                        const isSelected = selectedCategory === cat
+                        return (
+                          <button key={cat} onClick={() => setSelectedCategory(isSelected ? 'ALL' : cat)} disabled={!isActive && !isSelected}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all border ${isSelected ? 'bg-primary text-primary-foreground border-primary' : isActive ? 'bg-muted/50 text-muted-foreground border-border/50' : 'bg-muted/20 text-muted-foreground/40 border-transparent cursor-not-allowed'}`}>{cat}</button>
+                        )
+                      })}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-3 pb-3">
+                    {scannerData.length === 0 ? (
+                      <div className="text-center py-6">
+                        <Radar className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                        <p className="text-xs text-muted-foreground">F\u0131rsat tespit edilemedi</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {scannerData.slice(0, showAllScanner ? 50 : 4).map((opp: any) => {
+                          const isUp = (opp?.changePercent ?? 0) >= 0
+                          const isBuySignal = ['AL FIRSATI', 'G\u00dcVENL\u0130 AL', 'MACD CROSSOVER', 'A\u015eIRI SATIM', 'GOLDEN CROSS', 'BOLLINGER DIP', 'D\u00d6N\u00dc\u015e FIRSATI'].includes(opp?.category)
+                          const simpleSignal = isBuySignal ? 'AL' : opp?.category === 'D\u00dc\u015e\u00dc\u015e' ? 'SAT' : 'BEKLE'
+                          const simpleSignalColor = simpleSignal === 'AL' ? 'bg-emerald-500 text-white' : simpleSignal === 'SAT' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'
+                          return (
+                            <button key={opp?.id} className="flex items-center justify-between w-full p-2.5 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/60 transition-all text-left" onClick={() => router.push(`/dashboard/trade?symbol=${opp?.symbol}`)}>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${simpleSignalColor}`}>{simpleSignal}</span>
+                                <div className="min-w-0">
+                                  <p className="font-mono font-bold text-xs">{opp?.symbol}</p>
+                                  <p className="text-[9px] text-muted-foreground truncate max-w-[100px]">{opp?.name}</p>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="font-mono text-xs font-semibold">{formatCurrency(opp?.currentPrice)}</p>
+                                <span className={`text-[10px] font-mono font-bold ${isUp ? 'text-emerald-500' : 'text-red-500'}`}>{formatPercent(opp?.changePercent)}</span>
+                              </div>
+                            </button>
+                          )
+                        })}
+                        {scannerData.length > 4 && (
+                          <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setShowAllScanner(!showAllScanner)}>
+                            {showAllScanner ? 'Daha Az' : `+${scannerData.length - 4} f\u0131rsat daha`}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </PremiumGate>
+          )}
 
-                  // Determine simple signal for beginners
-                  const isBuySignal = ['AL FIRSATI', 'GÜVENLİ AL', 'MACD CROSSOVER', 'AŞIRI SATIM', 'GOLDEN CROSS', 'BOLLINGER DIP', 'DÖNÜŞ FIRSATI'].includes(opp?.category)
-                  const simpleSignal = isBuySignal ? 'AL' : opp?.category === 'DÜŞÜŞ' ? 'SAT' : 'BEKLE'
-                  const simpleSignalColor = simpleSignal === 'AL' ? 'bg-emerald-500 text-white' : simpleSignal === 'SAT' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'
-                  const simpleExplanation = simpleSignal === 'AL'
-                    ? 'Teknik göstergeler alım yönünde'
-                    : simpleSignal === 'SAT'
-                    ? 'Düşüş trendi devam ediyor'
-                    : 'Net bir sinyal yok, bekle'
+          {/* Mobil: Balina Radarı */}
+          {mobileTab === 'whale' && (
+            <PremiumGate feature="Balina Radar\u0131">
+              <WhaleRadar />
+            </PremiumGate>
+          )}
+        </div>
 
-                  return (
-                    <div
-                      key={opp?.id}
-                      className="group relative p-4 rounded-xl border border-border/50 bg-muted/30 hover:bg-muted/60 hover:border-border transition-all cursor-pointer"
-                      onClick={() => router.push(`/dashboard/trade?symbol=${opp?.symbol}`)}
-                    >
-                      {/* Simple AL/SAT/BEKLE signal - prominent for beginners */}
-                      <div className="flex items-center justify-between mb-2.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg ${simpleSignalColor}`}>
-                            {simpleSignal === 'AL' ? <TrendingUp className="h-3.5 w-3.5" /> : simpleSignal === 'SAT' ? <TrendingDown className="h-3.5 w-3.5" /> : <Activity className="h-3.5 w-3.5" />}
-                            {simpleSignal}
-                          </span>
+        {/* Desktop: 2 satır × 2 kolon */}
+        <div className="hidden lg:block space-y-4">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-base font-semibold">Piyasa Hareketleri</h2>
+            <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => router.push('/dashboard/market')}>
+              T\u00fcm Piyasa <ArrowRight className="h-3 w-3" />
+            </Button>
+          </div>
+
+          {/* Satır 1: Yükselen | Düşen */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/10">
+                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  En \u00c7ok Y\u00fckselen
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 pb-2">
+                {topGainers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Y\u00fckselen hisse yok</p>
+                ) : (
+                  <div className="px-2">
+                    {topGainers.map((stock: any, idx: number) => (
+                      <button key={stock?.id} className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-muted/50 transition-colors rounded-lg text-left group" onClick={() => router.push(`/dashboard/trade?symbol=${stock?.symbol}`)}>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-[10px] font-bold text-muted-foreground/60 w-4 shrink-0">{idx + 1}</span>
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-emerald-500">{stock.symbol?.slice(0, 2)}</span>
+                          </div>
                           <div className="min-w-0">
-                            <p className="font-mono font-bold text-sm">{opp?.symbol}</p>
-                            <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{opp?.name}</p>
+                            <p className="font-mono font-semibold text-sm truncate group-hover:text-primary transition-colors">{stock?.symbol}</p>
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{stock?.name}</p>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="font-mono text-sm font-semibold transition-all duration-300">{formatCurrency(opp?.currentPrice)}</p>
-                          <div className={`flex items-center justify-end gap-0.5 text-xs font-mono ${isUp ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {isUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                            {formatPercent(opp?.changePercent)}
+                        <div className="text-right shrink-0 ml-2">
+                          <p className="font-mono text-sm font-medium">{formatCurrency(stock?.currentPrice)}</p>
+                          <div className="flex items-center justify-end gap-0.5">
+                            <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                            <span className="text-xs font-mono font-bold text-emerald-500">+{stock._changePct.toFixed(2)}%</span>
                           </div>
                         </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/10">
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                  </div>
+                  En \u00c7ok D\u00fc\u015fen
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 pb-2">
+                {topLosers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">D\u00fc\u015fen hisse yok</p>
+                ) : (
+                  <div className="px-2">
+                    {topLosers.map((stock: any, idx: number) => (
+                      <button key={stock?.id} className="flex items-center justify-between w-full px-3 py-2.5 hover:bg-muted/50 transition-colors rounded-lg text-left group" onClick={() => router.push(`/dashboard/trade?symbol=${stock?.symbol}`)}>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-[10px] font-bold text-muted-foreground/60 w-4 shrink-0">{idx + 1}</span>
+                          <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-bold text-red-300">{stock.symbol?.slice(0, 2)}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-mono font-semibold text-sm truncate group-hover:text-primary transition-colors">{stock?.symbol}</p>
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{stock?.name}</p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <p className="font-mono text-sm font-medium">{formatCurrency(stock?.currentPrice)}</p>
+                          <div className="flex items-center justify-end gap-0.5">
+                            <ArrowDownRight className="h-3 w-3 text-red-400" />
+                            <span className="text-xs font-mono font-bold text-red-400">{stock._changePct.toFixed(2)}%</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Satır 2: Fırsat Tarayıcı | Balina Radarı */}
+          <div className="grid grid-cols-2 gap-4">
+            <PremiumGate feature="F\u0131rsat Taray\u0131c\u0131">
+              {isGuest ? (
+                <Card className="h-full">
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                    <Radar className="w-8 h-8 text-primary" />
+                    <h3 className="text-base font-bold">F\u0131rsat Taray\u0131c\u0131</h3>
+                    <p className="text-xs text-muted-foreground">Kay\u0131t olman\u0131z gerekmektedir.</p>
+                    <Button size="sm" onClick={() => router.push('/signup')} className="bg-gradient-to-r from-primary to-emerald-500 text-white">Kay\u0131t Ol</Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="h-full flex flex-col">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10">
+                        <Radar className="h-4 w-4 text-primary" />
                       </div>
-
-                      {/* Simple explanation for beginners */}
-                      <p className="text-[11px] text-muted-foreground mb-2">{simpleExplanation}</p>
-
-                      {/* Category & Reliability */}
-                      <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 font-semibold border ${categoryColor}`}>
-                          {opp?.category}
-                        </Badge>
-                        {(opp?.confirmingIndicators ?? 0) >= 2 && (
-                          <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${getReliabilityColor(opp?.reliability)}`}>
-                            {opp?.reliability === 'ÇOK_YÜKSEK' || opp?.reliability === 'YÜKSEK' ? (
-                              <ShieldCheck className="h-2.5 w-2.5" />
-                            ) : opp?.reliability === 'ORTA' ? (
-                              <Shield className="h-2.5 w-2.5" />
-                            ) : (
-                              <ShieldAlert className="h-2.5 w-2.5" />
-                            )}
-                            {getReliabilityLabel(opp?.reliability)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Compact technical row with tooltips */}
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {opp?.rsi14 !== null && opp?.rsi14 !== undefined && (
-                          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                            opp.rsi14 <= 30 ? 'bg-emerald-500/15 text-emerald-500' :
-                            opp.rsi14 >= 70 ? 'bg-red-500/15 text-red-500' :
-                            'bg-muted text-muted-foreground'
-                          }`}>
-                            RSI {opp.rsi14}
-                          </span>
-                        )}
-                        {opp?.macdCrossover?.crossover && (
-                          <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                            opp.macdCrossover.crossover === 'BULLISH' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-red-500/15 text-red-500'
-                          }`}>
-                            MACD {opp.macdCrossover.crossover === 'BULLISH' ? '↑' : '↓'}
-                          </span>
-                        )}
-                        {opp?.volumeSpike && (
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-500">
-                            🔥 Hacim
-                          </span>
-                        )}
-                        {opp?.mtf?.alignment === 'UYUMLU' && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500">
-                            ✓ Uyumlu
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Score bar */}
-                      <div className="flex items-center gap-1 mt-2">
-                        {[...Array(Math.min(opp?.score ?? 0, 10))].map((_: any, i: number) => (
-                          <div key={i} className={`h-1 flex-1 rounded-full ${
-                            (opp?.score ?? 0) >= 8 ? 'bg-emerald-500' : (opp?.score ?? 0) >= 5 ? 'bg-amber-500' : 'bg-blue-500'
-                          }`} />
-                        ))}
-                        {[...Array(Math.max(0, 10 - Math.min(opp?.score ?? 0, 10)))].map((_: any, i: number) => (
-                          <div key={`e-${i}`} className="h-1 flex-1 rounded-full bg-muted" />
-                        ))}
+                      <div>
+                        <CardTitle className="text-sm font-semibold">F\u0131rsat Taray\u0131c\u0131</CardTitle>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          RSI, MA, hacim analizi
+                          {scannerData.length > 0 && <span className="text-primary font-medium ml-1">({scannerData.length})</span>}
+                        </p>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-              {/* Daha Fazla / Daha Az butonu */}
-              {scannerData.length > 2 && (
-                <div className="flex justify-center mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs"
-                    onClick={() => setShowAllScanner(!showAllScanner)}
-                  >
-                    {showAllScanner ? (
-                      'Daha Az Göster'
-                    ) : (
-                      `Daha Fazla (${Math.min(scannerData.length, 50) - 2} fırsat daha)`
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                      <button onClick={() => setSelectedCategory('ALL')} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all border ${selectedCategory === 'ALL' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-muted-foreground border-border/50'}`}>
+                        <Filter className="h-2.5 w-2.5" /> T\u00fcm\u00fc
+                      </button>
+                      {scannerCategories.map((cat: string) => {
+                        const isActive = activeCategories.includes(cat)
+                        const isSelected = selectedCategory === cat
+                        return (
+                          <button key={cat} onClick={() => setSelectedCategory(isSelected ? 'ALL' : cat)} disabled={!isActive && !isSelected}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all border ${isSelected ? 'bg-primary text-primary-foreground border-primary' : isActive ? 'bg-muted/50 text-muted-foreground border-border/50' : 'bg-muted/20 text-muted-foreground/40 border-transparent cursor-not-allowed'}`}>{cat}</button>
+                        )
+                      })}
+                    </div>
+                    {!marketOpen && (
+                      <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <span className="text-amber-500 text-xs">\u23f0</span>
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400">Borsa kapal\u0131</p>
+                      </div>
                     )}
-                  </Button>
-                </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 overflow-y-auto max-h-[500px]">
+                    {scannerData.length === 0 ? (
+                      <div className="text-center py-6">
+                        <Radar className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                        <p className="text-xs text-muted-foreground">
+                          {selectedCategory !== 'ALL' ? `"${selectedCategory}" kategorisinde f\u0131rsat yok` : 'F\u0131rsat tespit edilemedi'}
+                        </p>
+                        {selectedCategory !== 'ALL' && (
+                          <Button variant="outline" size="sm" className="mt-2 text-[10px]" onClick={() => setSelectedCategory('ALL')}>T\u00fcm\u00fc G\u00f6ster</Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {scannerData.slice(0, showAllScanner ? 50 : 4).map((opp: any) => {
+                          const isUp = (opp?.changePercent ?? 0) >= 0
+                          const categoryColor = getCategoryColor(opp?.category)
+                          const isBuySignal = ['AL FIRSATI', 'G\u00dcVENL\u0130 AL', 'MACD CROSSOVER', 'A\u015eIRI SATIM', 'GOLDEN CROSS', 'BOLLINGER DIP', 'D\u00d6N\u00dc\u015e FIRSATI'].includes(opp?.category)
+                          const simpleSignal = isBuySignal ? 'AL' : opp?.category === 'D\u00dc\u015e\u00dc\u015e' ? 'SAT' : 'BEKLE'
+                          const simpleSignalColor = simpleSignal === 'AL' ? 'bg-emerald-500 text-white' : simpleSignal === 'SAT' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'
+                          return (
+                            <div key={opp?.id} className="p-2.5 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/60 transition-all cursor-pointer" onClick={() => router.push(`/dashboard/trade?symbol=${opp?.symbol}`)}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${simpleSignalColor}`}>{simpleSignal}</span>
+                                  <p className="font-mono font-bold text-xs">{opp?.symbol}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="font-mono text-xs font-semibold">{formatCurrency(opp?.currentPrice)}</p>
+                                  <span className={`text-[10px] font-mono font-bold ${isUp ? 'text-emerald-500' : 'text-red-500'}`}>{formatPercent(opp?.changePercent)}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <Badge variant="outline" className={`text-[9px] px-1 py-0 h-4 font-semibold border ${categoryColor}`}>{opp?.category}</Badge>
+                                {opp?.rsi14 !== null && opp?.rsi14 !== undefined && (
+                                  <span className={`text-[9px] font-mono font-bold px-1 py-0.5 rounded ${opp.rsi14 <= 30 ? 'bg-emerald-500/15 text-emerald-500' : opp.rsi14 >= 70 ? 'bg-red-500/15 text-red-500' : 'bg-muted text-muted-foreground'}`}>RSI {opp.rsi14}</span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                        {scannerData.length > 4 && (
+                          <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setShowAllScanner(!showAllScanner)}>
+                            {showAllScanner ? 'Daha Az' : `+${scannerData.length - 4} f\u0131rsat daha`}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </FadeIn>
-      )}
-      </PremiumGate>
+            </PremiumGate>
 
-      {/* Balina Radarı */}
-      <FadeIn delay={0.35}>
-        <PremiumGate feature="Balina Radarı">
-          <WhaleRadar />
-        </PremiumGate>
+            <PremiumGate feature="Balina Radar\u0131">
+              <WhaleRadar />
+            </PremiumGate>
+          </div>
+        </div>
       </FadeIn>
 
       {/* Haber Akışı */}
