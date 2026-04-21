@@ -36,10 +36,10 @@ export function PremiumGate({ children, feature, className }: PremiumGateProps &
               <Crown className="h-8 w-8 text-white" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-bold">Premium \u00d6zellik</h3>
+              <h3 className="text-xl font-bold">Premium Özellik</h3>
               <p className="text-muted-foreground text-sm">
-                {feature ? `${feature} \u00f6zelli\u011fi` : 'Bu \u00f6zellik'} Premium aboneli\u011fe \u00f6zeldir.
-                7 g\u00fcn \u00fccretsiz deneyin!
+                {feature ? `${feature} özelliği` : 'Bu özellik'} Premium aboneliğe özeldir.
+                7 gün ücretsiz deneyin!
               </p>
             </div>
             <div className="space-y-3">
@@ -48,9 +48,9 @@ export function PremiumGate({ children, feature, className }: PremiumGateProps &
                 onClick={() => router.push('/dashboard/pricing')}
               >
                 <Sparkles className="h-4 w-4 mr-2" />
-                Premium'a Y\u00fckselt
+                Premium'a Yükselt
               </Button>
-              <p className="text-xs text-muted-foreground">\u20a449,90/ay'dan ba\u015flayan fiyatlarla</p>
+              <p className="text-xs text-muted-foreground">₺49,90/ay'dan başlayan fiyatlarla</p>
             </div>
           </CardContent>
         </Card>

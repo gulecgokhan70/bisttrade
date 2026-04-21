@@ -285,8 +285,8 @@ export function DashboardContent() {
           </div>
           <div className="flex rounded-xl bg-muted/50 p-1 mb-4">
             {[
-              { key: 'movers', label: 'Y\u00fckselen/D\u00fc\u015fen', icon: <BarChart3 className="h-3.5 w-3.5" /> },
-              { key: 'scanner', label: 'F\u0131rsat', icon: <Radar className="h-3.5 w-3.5" /> },
+              { key: 'movers', label: 'Yükselen/Düşen', icon: <BarChart3 className="h-3.5 w-3.5" /> },
+              { key: 'scanner', label: 'Fırsat', icon: <Radar className="h-3.5 w-3.5" /> },
               { key: 'whale', label: 'Balina', icon: <Zap className="h-3.5 w-3.5" /> },
             ].map((tab) => (
               <button
@@ -311,7 +311,7 @@ export function DashboardContent() {
                 <CardHeader className="pb-1 px-3 pt-3">
                   <CardTitle className="text-xs flex items-center gap-1.5">
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                    Y\u00fckselen
+                    Yükselen
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 pb-2">
@@ -342,7 +342,7 @@ export function DashboardContent() {
                 <CardHeader className="pb-1 px-3 pt-3">
                   <CardTitle className="text-xs flex items-center gap-1.5">
                     <TrendingDown className="h-3.5 w-3.5 text-red-500" />
-                    D\u00fc\u015fen
+                    Düşen
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 pb-2">
@@ -374,13 +374,13 @@ export function DashboardContent() {
 
           {/* Mobil: Fırsat Tarayıcı */}
           {mobileTab === 'scanner' && (
-            <PremiumGate feature="F\u0131rsat Taray\u0131c\u0131">
+            <PremiumGate feature="Fırsat Tarayıcı">
               {isGuest ? (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-8 text-center space-y-3">
                     <Radar className="w-8 h-8 text-primary" />
-                    <p className="text-sm text-muted-foreground">Kay\u0131t olman\u0131z gerekmektedir.</p>
-                    <Button size="sm" onClick={() => router.push('/signup')} className="bg-gradient-to-r from-primary to-emerald-500 text-white">Kay\u0131t Ol</Button>
+                    <p className="text-sm text-muted-foreground">Kayıt olmanız gerekmektedir.</p>
+                    <Button size="sm" onClick={() => router.push('/signup')} className="bg-gradient-to-r from-primary to-emerald-500 text-white">Kayıt Ol</Button>
                   </CardContent>
                 </Card>
               ) : (
@@ -388,12 +388,12 @@ export function DashboardContent() {
                   <CardHeader className="pb-2 px-3 pt-3">
                     <div className="flex items-center gap-2">
                       <Radar className="h-4 w-4 text-primary" />
-                      <CardTitle className="text-sm">F\u0131rsat Taray\u0131c\u0131</CardTitle>
+                      <CardTitle className="text-sm">Fırsat Tarayıcı</CardTitle>
                       {scannerData.length > 0 && <Badge variant="secondary" className="text-[10px] px-1.5">{scannerData.length}</Badge>}
                     </div>
                     <div className="flex items-center gap-1 mt-2 flex-wrap">
                       <button onClick={() => setSelectedCategory('ALL')} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all border ${selectedCategory === 'ALL' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-muted-foreground border-border/50'}`}>
-                        <Filter className="h-2.5 w-2.5" /> T\u00fcm\u00fc
+                        <Filter className="h-2.5 w-2.5" /> Tümü
                       </button>
                       {scannerCategories.map((cat: string) => {
                         const isActive = activeCategories.includes(cat)
@@ -409,14 +409,14 @@ export function DashboardContent() {
                     {scannerData.length === 0 ? (
                       <div className="text-center py-6">
                         <Radar className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                        <p className="text-xs text-muted-foreground">F\u0131rsat tespit edilemedi</p>
+                        <p className="text-xs text-muted-foreground">Fırsat tespit edilemedi</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {scannerData.slice(0, showAllScanner ? 50 : 4).map((opp: any) => {
                           const isUp = (opp?.changePercent ?? 0) >= 0
-                          const isBuySignal = ['AL FIRSATI', 'G\u00dcVENL\u0130 AL', 'MACD CROSSOVER', 'A\u015eIRI SATIM', 'GOLDEN CROSS', 'BOLLINGER DIP', 'D\u00d6N\u00dc\u015e FIRSATI'].includes(opp?.category)
-                          const simpleSignal = isBuySignal ? 'AL' : opp?.category === 'D\u00dc\u015e\u00dc\u015e' ? 'SAT' : 'BEKLE'
+                          const isBuySignal = ['AL FIRSATI', 'GÜVENLİ AL', 'MACD CROSSOVER', 'AŞIRI SATIM', 'GOLDEN CROSS', 'BOLLINGER DIP', 'DÖNÜŞ FIRSATI'].includes(opp?.category)
+                          const simpleSignal = isBuySignal ? 'AL' : opp?.category === 'DÜŞÜŞ' ? 'SAT' : 'BEKLE'
                           const simpleSignalColor = simpleSignal === 'AL' ? 'bg-emerald-500 text-white' : simpleSignal === 'SAT' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'
                           return (
                             <button key={opp?.id} className="flex items-center justify-between w-full p-2.5 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/60 transition-all text-left" onClick={() => router.push(`/dashboard/trade?symbol=${opp?.symbol}`)}>
@@ -436,7 +436,7 @@ export function DashboardContent() {
                         })}
                         {scannerData.length > 4 && (
                           <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setShowAllScanner(!showAllScanner)}>
-                            {showAllScanner ? 'Daha Az' : `+${scannerData.length - 4} f\u0131rsat daha`}
+                            {showAllScanner ? 'Daha Az' : `+${scannerData.length - 4} fırsat daha`}
                           </Button>
                         )}
                       </div>
@@ -449,7 +449,7 @@ export function DashboardContent() {
 
           {/* Mobil: Balina Radarı */}
           {mobileTab === 'whale' && (
-            <PremiumGate feature="Balina Radar\u0131">
+            <PremiumGate feature="Balina Radarı">
               <WhaleRadar />
             </PremiumGate>
           )}
@@ -460,7 +460,7 @@ export function DashboardContent() {
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-base font-semibold">Piyasa Hareketleri</h2>
             <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => router.push('/dashboard/market')}>
-              T\u00fcm Piyasa <ArrowRight className="h-3 w-3" />
+              Tüm Piyasa <ArrowRight className="h-3 w-3" />
             </Button>
           </div>
 
@@ -472,12 +472,12 @@ export function DashboardContent() {
                   <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/10">
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
                   </div>
-                  En \u00c7ok Y\u00fckselen
+                  En Çok Yükselen
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0 pb-2">
                 {topGainers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Y\u00fckselen hisse yok</p>
+                  <p className="text-sm text-muted-foreground text-center py-6">Yükselen hisse yok</p>
                 ) : (
                   <div className="px-2">
                     {topGainers.map((stock: any, idx: number) => (
@@ -511,12 +511,12 @@ export function DashboardContent() {
                   <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/10">
                     <TrendingDown className="h-4 w-4 text-red-500" />
                   </div>
-                  En \u00c7ok D\u00fc\u015fen
+                  En Çok Düşen
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0 pb-2">
                 {topLosers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">D\u00fc\u015fen hisse yok</p>
+                  <p className="text-sm text-muted-foreground text-center py-6">Düşen hisse yok</p>
                 ) : (
                   <div className="px-2">
                     {topLosers.map((stock: any, idx: number) => (
@@ -549,14 +549,14 @@ export function DashboardContent() {
           {/* Satır 2: Fırsat Tarayıcı | Balina Radarı */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: '1 1 0%', minWidth: 0 }}>
-            <PremiumGate feature="F\u0131rsat Taray\u0131c\u0131">
+            <PremiumGate feature="Fırsat Tarayıcı">
               {isGuest ? (
                 <Card className="h-full">
                   <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-3">
                     <Radar className="w-8 h-8 text-primary" />
-                    <h3 className="text-base font-bold">F\u0131rsat Taray\u0131c\u0131</h3>
-                    <p className="text-xs text-muted-foreground">Kay\u0131t olman\u0131z gerekmektedir.</p>
-                    <Button size="sm" onClick={() => router.push('/signup')} className="bg-gradient-to-r from-primary to-emerald-500 text-white">Kay\u0131t Ol</Button>
+                    <h3 className="text-base font-bold">Fırsat Tarayıcı</h3>
+                    <p className="text-xs text-muted-foreground">Kayıt olmanız gerekmektedir.</p>
+                    <Button size="sm" onClick={() => router.push('/signup')} className="bg-gradient-to-r from-primary to-emerald-500 text-white">Kayıt Ol</Button>
                   </CardContent>
                 </Card>
               ) : (
@@ -567,7 +567,7 @@ export function DashboardContent() {
                         <Radar className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <CardTitle className="text-sm font-semibold">F\u0131rsat Taray\u0131c\u0131</CardTitle>
+                        <CardTitle className="text-sm font-semibold">Fırsat Tarayıcı</CardTitle>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
                           RSI, MA, hacim analizi
                           {scannerData.length > 0 && <span className="text-primary font-medium ml-1">({scannerData.length})</span>}
@@ -576,7 +576,7 @@ export function DashboardContent() {
                     </div>
                     <div className="flex items-center gap-1 mt-2 flex-wrap">
                       <button onClick={() => setSelectedCategory('ALL')} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all border ${selectedCategory === 'ALL' ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-muted-foreground border-border/50'}`}>
-                        <Filter className="h-2.5 w-2.5" /> T\u00fcm\u00fc
+                        <Filter className="h-2.5 w-2.5" /> Tümü
                       </button>
                       {scannerCategories.map((cat: string) => {
                         const isActive = activeCategories.includes(cat)
@@ -589,8 +589,8 @@ export function DashboardContent() {
                     </div>
                     {!marketOpen && (
                       <div className="flex items-center gap-1.5 mt-2 px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                        <span className="text-amber-500 text-xs">\u23f0</span>
-                        <p className="text-[10px] text-amber-600 dark:text-amber-400">Borsa kapal\u0131</p>
+                        <span className="text-amber-500 text-xs">⏰</span>
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400">Borsa kapalı</p>
                       </div>
                     )}
                   </CardHeader>
@@ -599,10 +599,10 @@ export function DashboardContent() {
                       <div className="text-center py-6">
                         <Radar className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
                         <p className="text-xs text-muted-foreground">
-                          {selectedCategory !== 'ALL' ? `"${selectedCategory}" kategorisinde f\u0131rsat yok` : 'F\u0131rsat tespit edilemedi'}
+                          {selectedCategory !== 'ALL' ? `"${selectedCategory}" kategorisinde fırsat yok` : 'Fırsat tespit edilemedi'}
                         </p>
                         {selectedCategory !== 'ALL' && (
-                          <Button variant="outline" size="sm" className="mt-2 text-[10px]" onClick={() => setSelectedCategory('ALL')}>T\u00fcm\u00fc G\u00f6ster</Button>
+                          <Button variant="outline" size="sm" className="mt-2 text-[10px]" onClick={() => setSelectedCategory('ALL')}>Tümü Göster</Button>
                         )}
                       </div>
                     ) : (
@@ -610,8 +610,8 @@ export function DashboardContent() {
                         {scannerData.slice(0, showAllScanner ? 50 : 4).map((opp: any) => {
                           const isUp = (opp?.changePercent ?? 0) >= 0
                           const categoryColor = getCategoryColor(opp?.category)
-                          const isBuySignal = ['AL FIRSATI', 'G\u00dcVENL\u0130 AL', 'MACD CROSSOVER', 'A\u015eIRI SATIM', 'GOLDEN CROSS', 'BOLLINGER DIP', 'D\u00d6N\u00dc\u015e FIRSATI'].includes(opp?.category)
-                          const simpleSignal = isBuySignal ? 'AL' : opp?.category === 'D\u00dc\u015e\u00dc\u015e' ? 'SAT' : 'BEKLE'
+                          const isBuySignal = ['AL FIRSATI', 'GÜVENLİ AL', 'MACD CROSSOVER', 'AŞIRI SATIM', 'GOLDEN CROSS', 'BOLLINGER DIP', 'DÖNÜŞ FIRSATI'].includes(opp?.category)
+                          const simpleSignal = isBuySignal ? 'AL' : opp?.category === 'DÜŞÜŞ' ? 'SAT' : 'BEKLE'
                           const simpleSignalColor = simpleSignal === 'AL' ? 'bg-emerald-500 text-white' : simpleSignal === 'SAT' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white'
                           return (
                             <div key={opp?.id} className="p-2.5 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/60 transition-all cursor-pointer" onClick={() => router.push(`/dashboard/trade?symbol=${opp?.symbol}`)}>
@@ -636,7 +636,7 @@ export function DashboardContent() {
                         })}
                         {scannerData.length > 4 && (
                           <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setShowAllScanner(!showAllScanner)}>
-                            {showAllScanner ? 'Daha Az' : `+${scannerData.length - 4} f\u0131rsat daha`}
+                            {showAllScanner ? 'Daha Az' : `+${scannerData.length - 4} fırsat daha`}
                           </Button>
                         )}
                       </div>
@@ -648,7 +648,7 @@ export function DashboardContent() {
             </div>
 
             <div style={{ flex: '1 1 0%', minWidth: 0 }}>
-            <PremiumGate feature="Balina Radar\u0131">
+            <PremiumGate feature="Balina Radarı">
               <WhaleRadar />
             </PremiumGate>
             </div>
