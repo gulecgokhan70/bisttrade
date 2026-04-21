@@ -28,9 +28,9 @@ export function PremiumGate({ children, feature, className }: PremiumGateProps &
   }
 
   return (
-    <div className={`relative ${className ?? ''}`}>
+    <div className={`relative min-h-[320px] ${className ?? ''}`}>
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border-primary/20 shadow-2xl">
+        <Card className="max-w-sm w-full border-primary/20 shadow-2xl">
           <CardContent className="p-8 text-center space-y-6">
             <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
               <Crown className="h-8 w-8 text-white" />

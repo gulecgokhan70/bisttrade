@@ -547,8 +547,8 @@ export function DashboardContent() {
           </div>
 
           {/* Satır 2: Fırsat Tarayıcı | Balina Radarı */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="min-w-0">
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ flex: '1 1 0%', minWidth: 0 }}>
             <PremiumGate feature="F\u0131rsat Taray\u0131c\u0131">
               {isGuest ? (
                 <Card className="h-full">
@@ -647,7 +647,7 @@ export function DashboardContent() {
             </PremiumGate>
             </div>
 
-            <div className="min-w-0">
+            <div style={{ flex: '1 1 0%', minWidth: 0 }}>
             <PremiumGate feature="Balina Radar\u0131">
               <WhaleRadar />
             </PremiumGate>
