@@ -42,15 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="BIST Trade" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
-{/* manifest link added dynamically to avoid Next.js adding crossOrigin="use-credentials" */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            var link = document.createElement('link');
-            link.rel = 'manifest';
-            link.href = '/manifest.json';
-            document.head.appendChild(link);
-          })();
-        `}} />
+        <link rel="manifest" href="/manifest.json" crossOrigin="anonymous" />
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" />
       </head>
       <body className={`${dmSans.variable} ${jakartaSans.variable} ${jetbrainsMono.variable} font-sans`}>
