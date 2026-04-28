@@ -13,7 +13,7 @@ export const metadata = {
   title: 'BIST Trade - Sanal Borsa Simülatörü',
   description: 'BİST 500 hisseleri ile sanal borsa simülatörü. Gerçek zamanlı piyasa verileri, gelişmiş emirler, portföy takibi ve teknik analiz araçları.',
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
-  manifest: '/manifest.json',
+  // manifest is added manually in <head> to avoid crossOrigin="use-credentials"
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
@@ -42,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="BIST Trade" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
+        <link rel="manifest" href="/manifest.json" />
         <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" />
       </head>
       <body className={`${dmSans.variable} ${jakartaSans.variable} ${jetbrainsMono.variable} font-sans`}>

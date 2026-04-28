@@ -212,27 +212,31 @@ model PortfolioSnapshot {
 }
 
 model AutoStrategy {
-  id          String   @id @default(cuid())
-  userId      String
-  stockId     String
-  strategy    String   // SMA_CROSSOVER, RSI_STRATEGY, MACD_STRATEGY, BOLLINGER_STRATEGY, COMBINED
-  mode        String   @default("normal") // normal, aggressive
-  isActive    Boolean  @default(true)
-  maxAmount   Float    @default(50000)
-  maxQuantity Int      @default(100)
-  checkInterval Int    @default(60)  // seconds
-  lastChecked DateTime?
-  lastSignal  String?
-  totalTrades Int      @default(0)
-  totalPnL    Float    @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stock       Stock    @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String
+  stockId       String?
+  strategy      String   // SMA_CROSSOVER, RSI_STRATEGY, MACD_STRATEGY, BOLLINGER_STRATEGY, COMBINED, FULL_AUTO
+  mode          String   @default("normal") // normal, aggressive, ultra_aggressive
+  isActive      Boolean  @default(true)
+  isFullAuto    Boolean  @default(false)
+  budgetPercent Float?   // 1-10, percentage of portfolio to allocate
+  maxAmount     Float    @default(50000)
+  maxQuantity   Int      @default(100)
+  maxOpenPositions Int   @default(5)  // max simultaneous positions for full auto
+  checkInterval Int      @default(60)  // seconds
+  lastChecked   DateTime?
+  lastSignal    String?
+  totalTrades   Int      @default(0)
+  totalPnL      Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stock         Stock?   @relation(fields: [stockId], references: [id], onDelete: Cascade)
 
   @@unique([userId, stockId, strategy])
   @@index([userId])
   @@index([isActive])
+  @@index([isFullAuto])
 }
 
 model Subscription {
